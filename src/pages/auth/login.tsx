@@ -1,112 +1,89 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import { Inputbox } from "@/components/ui/inputbox";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
+import { ArrowRight, ArrowLeft, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
-type Step = "email" | "password" | "2fa" | "error" | "success";
+type Step = "email" | "password" | "2fa";
 
 export default function LoginPage() {
-  const { login, loginWithApple } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
+  
   const [currentStep, setCurrentStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [setupComplete, setSetupComplete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   
-  useEffect(() => {
-    // Check if user was redirected from setup completion
-    const setup = new URLSearchParams(window.location.search).get('setup');
-    if (setup === 'complete') {
-      setSetupComplete(true);
-      // Show the success message for 3 seconds
-      setTimeout(() => {
-        setSetupComplete(false);
-      }, 3000);
-    }
-  }, []);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    twoFactorCode: "",
+  });
   
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Don't proceed if currently submitting
+    if (isSubmitting) return;
+    
+    // Validate current step
     if (currentStep === "email") {
-      if (!email.trim()) {
-        setError("Please enter your email address");
+      if (!validateEmail(formData.email)) {
+        setError("Please enter a valid admission number or email address");
         return;
       }
-      
-      // Add proper email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        setError("Please enter a valid email address");
-        return;
-      }
-      
       setCurrentStep("password");
-      setError(null);
-    } else if (currentStep === "password") {
-      if (!password.trim()) {
+    } 
+    else if (currentStep === "password") {
+      if (!formData.password) {
         setError("Please enter your password");
         return;
       }
       
-      // Simulate checking if 2FA is enabled
-      const has2FA = false; // This would be determined by your API
+      // Attempt login
+      setIsSubmitting(true);
       
-      if (has2FA) {
-        setCurrentStep("2fa");
-      } else {
-        // Here you would normally call an API to login
-        handleLogin();
+      try {
+        setShowSuccess(true);
+        
+        // Convert admission number to email format if needed
+        const email = formData.email.includes('@') 
+          ? formData.email 
+          : `${formData.email}@pwgurukulam.edu`;
+          
+        await login(email, formData.password);
+        
+        // Wait for the animation to complete before redirecting
+        setTimeout(() => {
+          // Redirect with success message
+          window.location.href = "/auth?login=success";
+        }, 1500);
+      } catch (err) {
+        setIsSubmitting(false);
+        setShowSuccess(false);
+        setError("Invalid admission number or password. Please try again.");
       }
-      setError(null);
-    } else if (currentStep === "2fa") {
-      if (!twoFactorCode.trim() || twoFactorCode.length !== 6) {
-        setError("Please enter a valid 6-digit code");
+    }
+    else if (currentStep === "2fa") {
+      if (!formData.twoFactorCode || formData.twoFactorCode.length !== 6) {
+        setError("Please enter a valid 6-digit verification code");
         return;
       }
       
-      handleLogin();
-      setError(null);
+      // Simulate 2FA verification
+      setIsSubmitting(true);
+      setTimeout(() => {
+        setShowSuccess(true);
+        setTimeout(() => {
+          window.location.href = "/auth?login=success";
+        }, 1500);
+      }, 1000);
     }
-  };
-  
-  // Use the keyboard navigation hook
-  useKeyboardNavigation(
-    handleNext, 
-    [currentStep, email, password, twoFactorCode]
-  );
-  
-  const handleLogin = async () => {
-    setIsLoading(true);
-    try {
-      await login(email, password);
-      
-      // Show success message instead of redirecting
-      alert("Login successful! Welcome back to Prayatna.");
-    } catch (err) {
-      setCurrentStep("error");
-      setError("Invalid credentials. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await loginWithApple();
-      alert("Apple sign-in successful! Welcome to Prayatna.");
-    } catch (err) {
-      setError("Apple sign-in failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    
+    setError(null);
   };
   
   const handleBack = () => {
@@ -114,10 +91,25 @@ export default function LoginPage() {
       setCurrentStep("email");
     } else if (currentStep === "2fa") {
       setCurrentStep("password");
-    } else if (currentStep === "error") {
-      setCurrentStep("email");
     }
     setError(null);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      await loginWithGoogle();
+      alert("Google sign-in successful! Welcome to PW Gurukulam.");
+    } catch (err) {
+      setError("Google sign-in failed. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+  
+  const validateEmail = (email: string) => {
+    // Allow admission numbers (alphanumeric) or email addresses
+    return /^[a-zA-Z0-9]+$/.test(email) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
   
   const variants = {
@@ -141,62 +133,50 @@ export default function LoginPage() {
     }
   };
   
+  // Use the keyboard navigation hook
+  useKeyboardNavigation(
+    handleNext,
+    [currentStep, formData, isSubmitting],
+    true
+  );
+  
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
-      className="rounded-2xl"
+      className="w-full"
     >
-      {setupComplete && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="bg-green-50 text-green-800 p-4 mb-6 rounded-lg flex items-center"
-        >
-          <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
-          <div>
-            <p className="font-medium">Setup completed successfully!</p>
-            <p className="text-sm">Please login to access your dashboard.</p>
-          </div>
-        </motion.div>
+      {/* Success loading animation */}
+      {showSuccess && (
+        <LoadingAnimation
+          title="Logging you in"
+          description="Welcome back to PW Gurukulam..."
+          variant="blue"
+        />
       )}
       
-      <div className="flex items-center mb-8">
-        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 2V5" stroke="#0284c7" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M16 2V5" stroke="#0284c7" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M3.5 9.08984H20.5" stroke="#0284c7" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z" stroke="#0284c7" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12 13.5V17.5" stroke="#0284c7" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M10 15.5H14" stroke="#0284c7" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+      <div className="mb-6">
+        <div className="flex items-center mb-4">
+          <div className="w-10 h-10 bg-gradient-to-br from-[#4BA3C7] to-[#A484F3] rounded-full flex items-center justify-center mr-3">
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <h1 className="text-2xl font-semibold text-[#2D2D2D]">
+            {currentStep === "email" && "Welcome Back"}
+            {currentStep === "password" && "Enter Your Password"}
+            {currentStep === "2fa" && "Two-Factor Authentication"}
+          </h1>
         </div>
-        <div>
-          <motion.h1 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-2xl font-semibold text-gray-800 mb-1"
-          >
-            Welcome Back
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-gray-600 text-sm"
-          >
-            Log in to access your healthcare dashboard
-          </motion.p>
-        </div>
+        <p className="text-sm text-[#6B7280]">
+          {currentStep === "email" && "Sign in to your PW Gurukulam account"}
+          {currentStep === "password" && "Enter your secure password"}
+          {currentStep === "2fa" && "Enter the 6-digit code from your authenticator app"}
+        </p>
       </div>
       
-      <div className="relative overflow-hidden" style={{ height: "200px" }}>
-        <AnimatePresence initial={false} custom={currentStep === "email" ? 1 : -1}>
+      <div className="relative overflow-hidden min-h-[200px]">
+        <AnimatePresence initial={false} custom={1}>
           {currentStep === "email" && (
             <motion.div
               key="email"
@@ -208,17 +188,21 @@ export default function LoginPage() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute top-0 left-0 w-full"
             >
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Inputbox
                     id="email"
-                    type="email"
-                    label="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    label="Admission number or email"
+                    value={formData.email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                      setFormData({ ...formData, email: e.target.value })}
                     className="w-full"
                     autoFocus
                   />
+                  <p className="text-sm text-[#6B7280]">
+                    Enter your admission number or email address
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -227,7 +211,7 @@ export default function LoginPage() {
           {currentStep === "password" && (
             <motion.div
               key="password"
-              custom={-1}
+              custom={1}
               variants={variants}
               initial="enter"
               animate="center"
@@ -235,17 +219,23 @@ export default function LoginPage() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute top-0 left-0 w-full"
             >
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Inputbox
                     id="password"
                     type="password"
                     label="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                      setFormData({ ...formData, password: e.target.value })}
                     className="w-full"
                     autoFocus
                   />
+                  <div className="text-right">
+                    <a href="#" className="text-sm text-[#4BA3C7] hover:underline">
+                      Forgot password?
+                    </a>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -254,7 +244,7 @@ export default function LoginPage() {
           {currentStep === "2fa" && (
             <motion.div
               key="2fa"
-              custom={-1}
+              custom={1}
               variants={variants}
               initial="enter"
               animate="center"
@@ -262,147 +252,98 @@ export default function LoginPage() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute top-0 left-0 w-full"
             >
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Inputbox
-                    id="2fa"
+                    id="twoFactorCode"
                     type="text"
-                    label="Two-factor authentication code"
-                    value={twoFactorCode}
-                    onChange={(e) => setTwoFactorCode(e.target.value)}
-                    className="w-full"
+                    label="6-digit verification code"
+                    value={formData.twoFactorCode}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 6) {
+                        setFormData({ ...formData, twoFactorCode: value });
+                      }
+                    }}
+                    className="w-full text-center text-lg tracking-widest"
                     maxLength={6}
                     autoFocus
                   />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "error" && (
-            <motion.div
-              key="error"
-              custom={-1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-4">
-                <div className="p-4 bg-red-50 text-red-800 rounded-lg">
-                  <p>{error}</p>
+                  <p className="text-sm text-[#6B7280] text-center">
+                    Enter the 6-digit code from your authenticator app
+                  </p>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      
-      {error && currentStep !== "error" && (
-        <div className="mt-2 text-red-500 text-sm">
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 text-sm text-[#F76E6E]"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
       
-      <div className="mt-8 space-y-4">
-        {currentStep === "email" && (
+      <div className="mt-8 flex justify-between">
+        {currentStep !== "email" ? (
           <Button 
-            onClick={handleNext}
-            className="w-full bg-blue-500 hover:bg-blue-600"
-            disabled={isLoading}
-          >
-            Continue
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        )}
-        
-        {currentStep === "password" && (
-          <div className="flex space-x-2">
-            <Button 
-              onClick={handleBack}
-              variant="outline"
-              className="flex-1"
-              disabled={isLoading}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-            <Button 
-              onClick={handleNext}
-              className="flex-1 bg-blue-500 hover:bg-blue-600"
-              disabled={isLoading}
-            >
-              Continue
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        
-        {currentStep === "2fa" && (
-          <div className="flex space-x-2">
-            <Button 
-              onClick={handleBack}
-              variant="outline"
-              className="flex-1"
-              disabled={isLoading}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-            <Button 
-              onClick={handleNext}
-              className="flex-1 bg-blue-500 hover:bg-blue-600"
-              disabled={isLoading}
-            >
-              Log in
-            </Button>
-          </div>
-        )}
-        
-        {currentStep === "error" && (
-          <Button 
+            variant="ghost" 
+            size="sm" 
             onClick={handleBack}
-            className="w-full bg-blue-500 hover:bg-blue-600"
-            disabled={isLoading}
+            className="flex items-center gap-1 text-[#6B7280]"
+            disabled={isSubmitting}
           >
-            Try Again
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+        ) : (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => window.location.href = '/auth'}
+            className="flex items-center gap-1 text-[#6B7280] hover:text-[#4BA3C7] hover:bg-[#4BA3C7]/5"
+            disabled={isSubmitting}
+          >
+            <ArrowLeft className="h-4 w-4" /> Home
           </Button>
         )}
-        
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with</span>
-          </div>
-        </div>
         
         <Button 
-          onClick={handleAppleSignIn}
-          variant="outline" 
-          className="w-full flex items-center justify-center space-x-2"
-          disabled={isLoading}
+          onClick={handleNext}
+          className="flex items-center gap-1 bg-gradient-to-r from-[#4BA3C7] to-[#A484F3] hover:from-[#4BA3C7]/90 hover:to-[#A484F3]/90 text-white border-0"
+          disabled={isSubmitting}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-          >
-            <path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516.024.034 1.52.087 2.475-1.258.955-1.345.762-2.391.728-2.43zm3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422.212-2.189 1.675-2.789 1.698-2.854.023-.065-.597-.79-1.254-1.157a3.692 3.692 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56.244.729.625 1.924 1.273 2.796.576.984 1.34 1.667 1.659 1.899.319.232 1.219.386 1.843.067.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758.347-.79.505-1.217.473-1.282z" />
-            <path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516.024.034 1.52.087 2.475-1.258.955-1.345.762-2.391.728-2.43zm3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422.212-2.189 1.675-2.789 1.698-2.854.023-.065-.597-.79-1.254-1.157a3.692 3.692 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56.244.729.625 1.924 1.273 2.796.576.984 1.34 1.667 1.659 1.899.319.232 1.219.386 1.843.067.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758.347-.79.505-1.217.473-1.282z" />
-          </svg>
-          <span>Sign in with Apple</span>
+          {isSubmitting ? (
+            <span className="flex items-center">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"
+              />
+              {currentStep === "password" ? "Signing in..." : "Next"}
+            </span>
+          ) : (
+            <>
+              {currentStep === "2fa" ? "Complete Sign In" : 
+               currentStep === "password" ? "Sign In" : "Next"} 
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </>
+          )}
         </Button>
-        
-        <div className="mt-6 text-center text-sm text-gray-500">
-          Don't have an account? <a href="/signup" className="text-blue-600 hover:underline">Sign up</a>
-        </div>
       </div>
+      
+      {currentStep === "email" && (
+        <>
+          <div className="mt-6 text-center text-sm text-[#6B7280]">
+            Don't have an account? <a href="/signup" className="text-[#4BA3C7] hover:underline">Create one</a>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 }
+

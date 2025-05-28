@@ -1,84 +1,83 @@
 "use client";
 
-import { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Inputbox } from "@/components/ui/inputbox";
-import { FileUpload } from "@/components/ui/file-upload";
 import { LiquidSwitch } from "@/components/ui/liquid-switch";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
-import { 
-  Calendar as CalendarIcon, 
-  ArrowRight, 
+import {
+  Calendar as CalendarIcon,
+  ArrowRight,
   ArrowLeft,
-  Upload,
   Check,
-  X
+  X,
+  User,
+  Shield,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 
-type Step = 
-  | "email" 
-  | "password" 
-  | "2fa-setup" 
+type Step =
   | "name"
+  | "gender"
   | "dob"
-  | "diagnosis"
-  | "medications"
-  | "contact"
-  | "avatar"
+  | "phone"
+  | "admission"
+  | "password"
+  | "otp"
   | "review";
 
-interface UserProfile {
-  email: string;
+interface StudentProfile {
+  fullName: string;
+  gender: "male" | "female" | "other" | "";
+  dateOfBirth: Date | undefined;
+  phone: string;
+  alternatePhone: string;
+  admissionNumber: string;
   password: string;
   confirmPassword: string;
-  use2FA: boolean;
-  fullName: string;
-  dateOfBirth: Date | undefined;
-  primaryDiagnosis: string;
-  medications: string;
-  phone: string;
-  avatar: any;
+  otp: string;
 }
 
 export default function SignupPage() {
-  const { signup, loginWithApple } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [currentStep, setCurrentStep] = useState<Step>("email");
+  const { signup, loginWithGoogle } = useAuth();
+
+  const [currentStep, setCurrentStep] = useState<Step>("name");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  
-  const [profile, setProfile] = useState<UserProfile>({
-    email: "",
+
+  // OTP related states
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [canResendOtp, setCanResendOtp] = useState(false);
+
+  const [profile, setProfile] = useState<StudentProfile>({
+    fullName: "",
+    gender: "",
+    dateOfBirth: undefined,
+    phone: "",
+    alternatePhone: "",
+    admissionNumber: "",
     password: "",
     confirmPassword: "",
-    use2FA: false,
-    fullName: "",
-    dateOfBirth: undefined,
-    primaryDiagnosis: "",
-    medications: "",
-    phone: "",
-    avatar: null,
+    otp: "",
   });
-  
-  // Separate state for avatar preview URL
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  
+
   // Password validation states
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Password validation checks
   const passwordValidation = {
     minLength: profile.password.length >= 8,
@@ -88,42 +87,134 @@ export default function SignupPage() {
     hasSpecial: /[^A-Za-z0-9]/.test(profile.password),
     matches: profile.password === profile.confirmPassword,
   };
-  
+
   // Calculate overall password strength
-  const passwordStrength = Object.values(passwordValidation).filter(Boolean).length;
-  
+  const passwordStrength =
+    Object.values(passwordValidation).filter(Boolean).length;
+
   // Calculate progress percentage based on current step
   const steps: Step[] = [
-    "email", "password", "2fa-setup", "name", "dob", 
-    "diagnosis", "medications", "contact", "avatar", "review"
+    "name",
+    "gender",
+    "dob",
+    "phone",
+    "admission",
+    "password",
+    "otp",
+    "review",
   ];
   const currentStepIndex = steps.indexOf(currentStep);
   const progress = Math.round((currentStepIndex / (steps.length - 1)) * 100);
-  
+
+  // OTP Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            setCanResendOtp(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpTimer]);
+
+  // Function to send OTP
+  const sendOtp = async () => {
+    try {
+      setIsSubmitting(true);
+      // Simulate OTP sending API call
+      // await sendOtpToPhone(profile.phone);
+      
+      setOtpSent(true);
+      setOtpTimer(30); // 30 seconds timer
+      setCanResendOtp(false);
+      setProfile({ ...profile, otp: "" }); // Clear previous OTP
+      setError(null);
+    } catch (err) {
+      setError("Failed to send OTP. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Function to verify OTP
+  const verifyOtp = async (otpCode: string) => {
+    try {
+      setIsSubmitting(true);
+      // Simulate OTP verification API call
+      // await verifyOtpCode(profile.phone, otpCode);
+      
+      // For demo purposes, accept any 6-digit OTP
+      if (otpCode.length === 6) {
+        return true;
+      }
+      throw new Error("Invalid OTP");
+    } catch (err) {
+      throw new Error("Invalid OTP. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleNext = () => {
     // Don't proceed if currently submitting
     if (isSubmitting) return;
-    
+
     // Validate current step
-    if (currentStep === "email") {
-      if (!validateEmail(profile.email)) {
-        setError("Please enter a valid email address");
+    if (currentStep === "name") {
+      if (!profile.fullName.trim()) {
+        setError("Please enter your full name");
+        return;
+      }
+      setCurrentStep("gender");
+    } else if (currentStep === "gender") {
+      if (!profile.gender) {
+        setError("Please select your gender");
+        return;
+      }
+      setCurrentStep("dob");
+    } else if (currentStep === "dob") {
+      if (!profile.dateOfBirth) {
+        setError("Please select your date of birth");
+        return;
+      }
+      setCurrentStep("phone");
+    } else if (currentStep === "phone") {
+      if (!profile.phone.trim()) {
+        setError("Please enter your phone number");
+        return;
+      }
+      // Basic phone validation
+      if (!/^\d{10}$/.test(profile.phone.replace(/\D/g, ""))) {
+        setError("Please enter a valid 10-digit phone number");
+        return;
+      }
+      setCurrentStep("admission");
+    } else if (currentStep === "admission") {
+      if (!profile.admissionNumber.trim()) {
+        setError("Please enter your admission number");
         return;
       }
       setCurrentStep("password");
-    } 
-    else if (currentStep === "password") {
+    } else if (currentStep === "password") {
       // Check if we need to show confirm password screen
       if (!showConfirmPassword) {
         // Validate password requirements
-        if (!passwordValidation.minLength || 
-            !passwordValidation.hasSpecial || 
-            !passwordValidation.hasUppercase || 
-            !passwordValidation.hasNumber) {
+        if (
+          !passwordValidation.minLength ||
+          !passwordValidation.hasSpecial ||
+          !passwordValidation.hasUppercase ||
+          !passwordValidation.hasNumber
+        ) {
           setError("Please ensure your password meets all requirements");
           return;
         }
-        
+
         setShowConfirmPassword(true);
         setError(null);
         return;
@@ -133,86 +224,78 @@ export default function SignupPage() {
           setError("Passwords do not match");
           return;
         }
-        
-        setCurrentStep("2fa-setup");
-        setShowConfirmPassword(false);
+
+        setCurrentStep("otp");
+        // Send OTP when moving to OTP step
+        sendOtp();
       }
-    }
-    else if (currentStep === "2fa-setup") {
-      setCurrentStep("name");
-    }
-    else if (currentStep === "name") {
-      if (!profile.fullName.trim()) {
-        setError("Please enter your full name");
+    } else if (currentStep === "otp") {
+      if (!profile.otp.trim()) {
+        setError("Please enter the OTP");
         return;
       }
-      setCurrentStep("dob");
-    }
-    else if (currentStep === "dob") {
-      if (!profile.dateOfBirth) {
-        setError("Please select your date of birth");
+      if (profile.otp.length !== 6) {
+        setError("Please enter a valid 6-digit OTP");
         return;
       }
-      setCurrentStep("diagnosis");
-    }
-    else if (currentStep === "diagnosis") {
-      if (!profile.primaryDiagnosis.trim()) {
-        setError("Please enter your primary diagnosis");
-        return;
-      }
-      setCurrentStep("medications");
-    }
-    else if (currentStep === "medications") {
-      setCurrentStep("contact");
-    }
-    else if (currentStep === "contact") {
-      if (!profile.phone.trim()) {
-        setError("Please enter your phone number");
-        return;
-      }
-      setCurrentStep("avatar");
-    }
-    else if (currentStep === "avatar") {
-      setCurrentStep("review");
-    }
-    else if (currentStep === "review") {
+      
+      // Verify OTP
+      verifyOtp(profile.otp)
+        .then(() => {
+          setCurrentStep("review");
+          setError(null);
+        })
+        .catch((err) => {
+          setError(err.message);
+        });
+      return;
+    } else if (currentStep === "review") {
       handleSignup();
     }
-    
+
     setError(null);
   };
-  
+
   const handleBack = () => {
     if (showConfirmPassword) {
       setShowConfirmPassword(false);
       setError(null);
       return;
     }
-    
+
+    if (currentStep === "otp") {
+      setCurrentStep("password");
+      setShowConfirmPassword(true);
+      setError(null);
+      return;
+    }
+
     const prevStepIndex = Math.max(0, currentStepIndex - 1);
     setCurrentStep(steps[prevStepIndex]);
     setError(null);
   };
-  
+
   const handleSignup = async () => {
     setIsSubmitting(true);
-    
+
     try {
       // Show success animation before redirecting
       setShowSuccess(true);
-      
-      // Call the Firebase signup function with proper parameters
+
+      // Call the signup function with proper parameters
       const userData = {
         fullName: profile.fullName,
+        gender: profile.gender,
         dateOfBirth: profile.dateOfBirth,
-        primaryDiagnosis: profile.primaryDiagnosis,
-        medications: profile.medications,
         phone: profile.phone,
-        avatar: profile.avatar
+        alternatePhone: profile.alternatePhone,
+        admissionNumber: profile.admissionNumber,
       };
-      
-      await signup(profile.email, profile.password, userData);
-      
+
+      // In a real implementation, you'd use profile.phone as email or create an email from admission number
+      const email = `${profile.admissionNumber}@pwgurukulam.edu`;
+      await signup(email, profile.password, userData);
+
       // Wait for the animation to complete before redirecting
       setTimeout(() => {
         // Redirect to login with success message
@@ -225,72 +308,48 @@ export default function SignupPage() {
     }
   };
 
-  const handleAppleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    
+
     try {
-      await loginWithApple();
-      alert("Apple sign-up successful! Welcome to Prayatna.");
+      await loginWithGoogle();
+      alert("Google sign-up successful! Welcome to PW Gurukulam.");
     } catch (err) {
-      setError("Apple sign-in failed. Please try again.");
+      setError("Google sign-in failed. Please try again.");
       setIsSubmitting(false);
     }
   };
-  
-  const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Store the actual File object instead of the data URL
-      setProfile({ ...profile, avatar: file });
-      
-      // For preview purposes only, we can still use a data URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // Store the preview URL in a separate state if needed for UI display
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-  
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-  
+
   const variants = {
     enter: (direction: number) => {
       return {
         x: direction > 0 ? 1000 : -1000,
-        opacity: 0
+        opacity: 0,
       };
     },
     center: {
       zIndex: 1,
       x: 0,
-      opacity: 1
+      opacity: 1,
     },
     exit: (direction: number) => {
       return {
         zIndex: 0,
         x: direction < 0 ? 1000 : -1000,
-        opacity: 0
+        opacity: 0,
       };
-    }
+    },
   };
-  
+
   // Use the keyboard navigation hook
   useKeyboardNavigation(
     handleNext,
-    [currentStep, profile, isSubmitting],
-    true // Exclude textareas (like in the medications step)
+    [currentStep, profile, isSubmitting, showConfirmPassword],
+    true
   );
-  
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -300,49 +359,48 @@ export default function SignupPage() {
       {/* Use the new LoadingAnimation component */}
       {showSuccess && (
         <LoadingAnimation
-          title="Creating your personalized experience"
-          description="Preparing your healthcare dashboard..."
+          title="Creating your student account"
+          description="Setting up your PW Gurukulam dashboard..."
           variant="blue"
         />
       )}
-      
+
       <div className="mb-6">
         <div className="flex items-center mb-4">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="#0284c7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22" stroke="#0284c7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <div className="w-10 h-10 bg-gradient-to-br from-[#4BA3C7] to-[#A484F3] rounded-full flex items-center justify-center mr-3">
+            <User className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-2xl font-semibold text-gray-800">
-            {currentStep === "email" && "Create Account"}
-            {currentStep === "password" && "Secure Your Account"}
-            {currentStep === "2fa-setup" && "Additional Security"}
-            {currentStep === "name" && "Tell Us About You"}
+          <h1 className="text-2xl font-semibold text-[#2D2D2D]">
+            {currentStep === "name" && "Welcome to PW Gurukulam"}
+            {currentStep === "gender" && "Tell Us About Yourself"}
             {currentStep === "dob" && "Your Date of Birth"}
-            {currentStep === "diagnosis" && "Medical Information"}
-            {currentStep === "medications" && "Your Medications"}
-            {currentStep === "contact" && "Contact Information"}
-            {currentStep === "avatar" && "Profile Picture"}
+            {currentStep === "phone" && "Contact Information"}
+            {currentStep === "admission" && "Academic Details"}
+            {currentStep === "password" && "Secure Your Account"}
+            {currentStep === "otp" && "OTP Verification"}
             {currentStep === "review" && "Review Your Information"}
           </h1>
         </div>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[#6B7280]">
           Step {currentStepIndex + 1} of {steps.length}
         </p>
-        <div className="h-1 w-full bg-gray-100 mt-4">
-          <div 
-            className="h-1 bg-blue-600 transition-all duration-300" 
+        <div className="h-1.5 w-full bg-[#E5E7EB] mt-4 rounded-full">
+          <div
+            className="h-1.5 bg-gradient-to-r from-[#4BA3C7] to-[#7DDE92] transition-all duration-300 rounded-full"
             style={{ width: `${progress}%` }}
           ></div>
         </div>
       </div>
-      
-      <div className={`relative overflow-hidden ${currentStep === "review" ? "min-h-[450px]" : "min-h-[300px]"}`}>
+
+      <div
+        className={`relative overflow-hidden ${
+          currentStep === "review" ? "min-h-[300px]" : "min-h-[300px]"
+        }`}
+      >
         <AnimatePresence initial={false} custom={1}>
-          {currentStep === "email" && (
+          {currentStep === "name" && (
             <motion.div
-              key="email"
+              key="name"
               custom={1}
               variants={variants}
               initial="enter"
@@ -354,16 +412,208 @@ export default function SignupPage() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Inputbox
-                    id="email"
-                    type="email"
-                    label="Email address"
-                    value={profile.email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, email: e.target.value })}
+                    id="fullName"
+                    type="text"
+                    label="Your full name"
+                    value={profile.fullName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setProfile({ ...profile, fullName: e.target.value })
+                    }
                     className="w-full"
                     autoFocus
                   />
-                  <p className="text-sm text-gray-500">
-                    We'll use this email to contact you and for account recovery
+                  <p className="text-sm text-[#6B7280]">
+                    Enter your name as it appears on your school documents
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {currentStep === "gender" && (
+            <motion.div
+              key="gender"
+              custom={1}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute top-0 left-0 w-full"
+            >
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <Label htmlFor="gender" className="text-[#2D2D2D]">
+                    Select your gender
+                  </Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                      { value: "other", label: "Other" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() =>
+                          setProfile({
+                            ...profile,
+                            gender: option.value as any,
+                          })
+                        }
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          profile.gender === option.value
+                            ? "border-[#4BA3C7] bg-[#4BA3C7]/10 text-[#4BA3C7]"
+                            : "border-[#E5E7EB] hover:border-[#4BA3C7]/50 text-[#6B7280]"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {currentStep === "dob" && (
+            <motion.div
+              key="dob"
+              custom={1}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute top-0 left-0 w-full"
+            >
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="dob" className="text-[#2D2D2D]">
+                    Date of birth
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full flex justify-between text-left font-normal border-[#E5E7EB] hover:border-[#4BA3C7] h-12 px-4"
+                      >
+                        {profile.dateOfBirth ? (
+                          format(profile.dateOfBirth, "PPP")
+                        ) : (
+                          <span className="text-[#6B7280]">
+                            Select your date of birth
+                          </span>
+                        )}
+                        <CalendarIcon className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto max-w-none max-h-none p-0 bg-white shadow-xl border border-[#E5E7EB] rounded-lg overflow-visible"
+                      align="start"
+                    >
+                      <Calendar
+                        mode="single"
+                        selected={profile.dateOfBirth}
+                        onSelect={(date) =>
+                          setProfile({ ...profile, dateOfBirth: date })
+                        }
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                        captionLayout="dropdown-buttons"
+                        fromYear={1990}
+                        toYear={new Date().getFullYear()}
+                        className="border-0 shadow-none"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <div className="text-sm text-[#6B7280] space-y-1">
+                    <p>This will be verified with your Aadhaar card</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {currentStep === "phone" && (
+            <motion.div
+              key="phone"
+              custom={1}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute top-0 left-0 w-full"
+            >
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Inputbox
+                      id="phone"
+                      type="tel"
+                      label="Primary phone number"
+                      value={profile.phone}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setProfile({ ...profile, phone: e.target.value })
+                      }
+                      className="w-full"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Inputbox
+                      id="alternatePhone"
+                      type="tel"
+                      label="Alternate phone number (optional)"
+                      value={profile.alternatePhone}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setProfile({
+                          ...profile,
+                          alternatePhone: e.target.value,
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                  <p className="text-sm text-[#6B7280]">
+                    We'll use this for important notifications and account
+                    recovery
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {currentStep === "admission" && (
+            <motion.div
+              key="admission"
+              custom={1}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute top-0 left-0 w-full"
+            >
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Inputbox
+                    id="admission"
+                    type="text"
+                    label="Admission number"
+                    value={profile.admissionNumber}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setProfile({
+                        ...profile,
+                        admissionNumber: e.target.value,
+                      })
+                    }
+                    className="w-full"
+                    autoFocus
+                  />
+                  <p className="text-sm text-[#6B7280]">
+                    Enter the admission number provided by PW Gurukulam
                   </p>
                 </div>
               </div>
@@ -388,73 +638,140 @@ export default function SignupPage() {
                       <Inputbox
                         id="password"
                         type="password"
-                        label="Enter a Strong Password"
+                        label="Create a strong password"
                         value={profile.password}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                          setProfile({ ...profile, password: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setProfile({ ...profile, password: e.target.value })
+                        }
                         onFocus={() => setPasswordFocused(true)}
-                        onBlur={() => setPasswordFocused(profile.password.length > 0)}
+                        onBlur={() =>
+                          setPasswordFocused(profile.password.length > 0)
+                        }
                         className="w-full"
                         autoFocus
                       />
-                      
+
                       {/* Password strength indicator */}
                       {passwordFocused && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
-                          className="space-y-3 mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100"
+                          className="space-y-3 mt-2 p-3 bg-[#F2F5F7] rounded-lg border border-[#E5E7EB]"
                         >
                           <div className="space-y-1">
                             <div className="flex justify-between items-center">
-                              <span className="text-xs font-medium text-gray-500">Password strength</span>
+                              <span className="text-xs font-medium text-[#6B7280]">
+                                Password strength
+                              </span>
                               <span className="text-xs font-medium">
-                                {passwordStrength <= 2 && "Weak"}
-                                {passwordStrength > 2 && passwordStrength < 5 && "Medium"}
-                                {passwordStrength >= 5 && "Strong"}
+                                {passwordStrength <= 2 && (
+                                  <span className="text-[#F76E6E]">Weak</span>
+                                )}
+                                {passwordStrength > 2 &&
+                                  passwordStrength < 5 && (
+                                    <span className="text-[#F59E0B]">
+                                      Medium
+                                    </span>
+                                  )}
+                                {passwordStrength >= 5 && (
+                                  <span className="text-[#7DDE92]">Strong</span>
+                                )}
                               </span>
                             </div>
-                            <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
+                            <div className="w-full h-1 bg-[#E5E7EB] rounded-full overflow-hidden">
+                              <div
                                 className={`h-full transition-all duration-300 ${
-                                  passwordStrength <= 2 ? "bg-red-500" : 
-                                  passwordStrength < 5 ? "bg-yellow-500" : "bg-green-500"
-                                }`} 
-                                style={{ width: `${(passwordStrength / 6) * 100}%` }} 
+                                  passwordStrength <= 2
+                                    ? "bg-[#F76E6E]"
+                                    : passwordStrength < 5
+                                    ? "bg-[#F59E0B]"
+                                    : "bg-[#7DDE92]"
+                                }`}
+                                style={{
+                                  width: `${(passwordStrength / 6) * 100}%`,
+                                }}
                               />
                             </div>
                           </div>
-                          
+
                           <ul className="space-y-1 text-sm">
                             <li className="flex items-center gap-2">
-                              <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${passwordValidation.minLength ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                {passwordValidation.minLength ? '✓' : ''}
+                              <span
+                                className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                                  passwordValidation.minLength
+                                    ? "bg-[#A2F0C1] text-[#2D2D2D]"
+                                    : "bg-[#E5E7EB] text-[#6B7280]"
+                                }`}
+                              >
+                                {passwordValidation.minLength ? "✓" : ""}
                               </span>
-                              <span className={passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}>
+                              <span
+                                className={
+                                  passwordValidation.minLength
+                                    ? "text-[#2D2D2D]"
+                                    : "text-[#6B7280]"
+                                }
+                              >
                                 At least 8 characters
                               </span>
                             </li>
                             <li className="flex items-center gap-2">
-                              <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${passwordValidation.hasUppercase ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                {passwordValidation.hasUppercase ? '✓' : ''}
+                              <span
+                                className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                                  passwordValidation.hasUppercase
+                                    ? "bg-[#A2F0C1] text-[#2D2D2D]"
+                                    : "bg-[#E5E7EB] text-[#6B7280]"
+                                }`}
+                              >
+                                {passwordValidation.hasUppercase ? "✓" : ""}
                               </span>
-                              <span className={passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}>
+                              <span
+                                className={
+                                  passwordValidation.hasUppercase
+                                    ? "text-[#2D2D2D]"
+                                    : "text-[#6B7280]"
+                                }
+                              >
                                 At least one uppercase letter
                               </span>
                             </li>
                             <li className="flex items-center gap-2">
-                              <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${passwordValidation.hasNumber ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                {passwordValidation.hasNumber ? '✓' : ''}
+                              <span
+                                className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                                  passwordValidation.hasNumber
+                                    ? "bg-[#A2F0C1] text-[#2D2D2D]"
+                                    : "bg-[#E5E7EB] text-[#6B7280]"
+                                }`}
+                              >
+                                {passwordValidation.hasNumber ? "✓" : ""}
                               </span>
-                              <span className={passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-500'}>
+                              <span
+                                className={
+                                  passwordValidation.hasNumber
+                                    ? "text-[#2D2D2D]"
+                                    : "text-[#6B7280]"
+                                }
+                              >
                                 At least one number
                               </span>
                             </li>
                             <li className="flex items-center gap-2">
-                              <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${passwordValidation.hasSpecial ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                {passwordValidation.hasSpecial ? '✓' : ''}
+                              <span
+                                className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                                  passwordValidation.hasSpecial
+                                    ? "bg-[#A2F0C1] text-[#2D2D2D]"
+                                    : "bg-[#E5E7EB] text-[#6B7280]"
+                                }`}
+                              >
+                                {passwordValidation.hasSpecial ? "✓" : ""}
                               </span>
-                              <span className={passwordValidation.hasSpecial ? 'text-green-600' : 'text-gray-500'}>
+                              <span
+                                className={
+                                  passwordValidation.hasSpecial
+                                    ? "text-[#2D2D2D]"
+                                    : "text-[#6B7280]"
+                                }
+                              >
                                 At least one special character
                               </span>
                             </li>
@@ -467,21 +784,39 @@ export default function SignupPage() {
                       <Inputbox
                         id="confirmPassword"
                         type="password"
-                        label="Confirm Your Password"
+                        label="Confirm your password"
                         value={profile.confirmPassword}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                          setProfile({ ...profile, confirmPassword: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setProfile({
+                            ...profile,
+                            confirmPassword: e.target.value,
+                          })
+                        }
                         className="w-full"
                         autoFocus
                       />
-                      
+
                       {profile.confirmPassword && (
                         <div className="mt-2 flex items-center gap-2">
-                          <span className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${passwordValidation.matches ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                            {passwordValidation.matches ? '✓' : '×'}
+                          <span
+                            className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                              passwordValidation.matches
+                                ? "bg-[#A2F0C1] text-[#2D2D2D]"
+                                : "bg-[#F76E6E]/20 text-[#F76E6E]"
+                            }`}
+                          >
+                            {passwordValidation.matches ? "✓" : "×"}
                           </span>
-                          <span className={passwordValidation.matches ? 'text-green-600 text-sm' : 'text-red-600 text-sm'}>
-                            {passwordValidation.matches ? 'Passwords match' : 'Passwords do not match'}
+                          <span
+                            className={
+                              passwordValidation.matches
+                                ? "text-[#2D2D2D] text-sm"
+                                : "text-[#F76E6E] text-sm"
+                            }
+                          >
+                            {passwordValidation.matches
+                              ? "Passwords match"
+                              : "Passwords do not match"}
                           </span>
                         </div>
                       )}
@@ -492,9 +827,9 @@ export default function SignupPage() {
             </motion.div>
           )}
 
-          {currentStep === "2fa-setup" && (
+          {currentStep === "otp" && (
             <motion.div
-              key="2fa"
+              key="otp"
               custom={1}
               variants={variants}
               initial="enter"
@@ -504,254 +839,111 @@ export default function SignupPage() {
               className="absolute top-0 left-0 w-full"
             >
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 border border-blue-100 bg-blue-50 rounded-lg">
-                  <div>
-                    <h3 className="font-medium text-blue-900">
-                      Enable Two-Factor Authentication
-                    </h3>
-                    <p className="text-sm text-blue-700">
-                      Add an extra layer of security to your account
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#4BA3C7] to-[#A484F3] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Shield className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#2D2D2D]">
+                    Verify Your Phone Number
+                  </h3>
+                  <p className="text-sm text-[#6B7280]">
+                    We've sent a 6-digit verification code to
+                  </p>
+                  <p className="text-sm font-medium text-[#4BA3C7]">
+                    +91 {profile.phone}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* OTP Input Boxes */}
+                  <div className="flex justify-center gap-3">
+                    {Array.from({ length: 6 }, (_, index) => (
+                      <input
+                        key={index}
+                        type="text"
+                        maxLength={1}
+                        className="w-12 h-12 text-center text-lg font-bold border-2 border-[#E5E7EB] rounded-lg focus:border-[#4BA3C7] focus:outline-none transition-all duration-200 bg-white"
+                        value={profile.otp[index] || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!/^\d*$/.test(value)) return; // Only allow digits
+                          
+                          const newOtp = profile.otp.split("");
+                          newOtp[index] = value;
+                          const updatedOtp = newOtp.join("");
+                          
+                          setProfile({ ...profile, otp: updatedOtp });
+                          
+                          // Auto-focus next input
+                          if (value && index < 5) {
+                            const nextInput = document.querySelector(
+                              `input[data-index="${index + 1}"]`
+                            ) as HTMLInputElement;
+                            if (nextInput) nextInput.focus();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          // Handle backspace
+                          if (e.key === "Backspace" && !profile.otp[index] && index > 0) {
+                            const prevInput = document.querySelector(
+                              `input[data-index="${index - 1}"]`
+                            ) as HTMLInputElement;
+                            if (prevInput) prevInput.focus();
+                          }
+                        }}
+                        data-index={index}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Timer and Resend */}
+                  <div className="text-center space-y-3">
+                    {otpTimer > 0 ? (
+                      <p className="text-sm text-[#6B7280]">
+                        Resend OTP in{" "}
+                        <span className="font-medium text-[#4BA3C7]">
+                          {Math.floor(otpTimer / 60)}:
+                          {(otpTimer % 60).toString().padStart(2, "0")}
+                        </span>
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={sendOtp}
+                        disabled={isSubmitting}
+                        className="text-sm font-medium text-[#4BA3C7] hover:text-[#3B82C7] transition-colors disabled:opacity-50"
+                      >
+                        {isSubmitting ? "Sending..." : "Resend OTP"}
+                      </button>
+                    )}
+                    
+                    <p className="text-xs text-[#6B7280]">
+                      Didn't receive the code? Check your spam folder or{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentStep("phone");
+                          setError(null);
+                        }}
+                        className="text-[#4BA3C7] hover:underline font-medium"
+                      >
+                        edit phone number
+                      </button>
                     </p>
                   </div>
-                  <LiquidSwitch
-                    checked={profile.use2FA}
-                    onCheckedChange={(checked) => setProfile({ ...profile, use2FA: checked })}
-                  />
-                </div>
-                
-                {profile.use2FA && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="text-sm text-gray-600 p-3 bg-gray-50 rounded-lg"
-                  >
-                    <p>You'll set up 2FA after creating your account.</p>
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
-          )}
 
-          {currentStep === "name" && (
-            <motion.div
-              key="name"
-              custom={1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Inputbox
-                    id="fullName"
-                    type="text"
-                    label="Your full name"
-                    value={profile.fullName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, fullName: e.target.value })}
-                    className="w-full"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "dob" && (
-            <motion.div
-              key="dob"
-              custom={1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="dob">Date of birth</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full flex justify-between text-left font-normal"
-                      >
-                        {profile.dateOfBirth ? (
-                          format(profile.dateOfBirth, "PPP")
-                        ) : (
-                          <span className="text-gray-400">Select your date of birth</span>
-                        )}
-                        <CalendarIcon className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={profile.dateOfBirth}
-                        onSelect={(date) => setProfile({ ...profile, dateOfBirth: date })}
-                        disabled={(date) => date > new Date()}
-                        initialFocus
-                        captionLayout="dropdown-buttons"
-                        fromYear={1900}
-                        toYear={new Date().getFullYear()}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <div className="text-sm text-gray-500 space-y-1">
-                    <p>Your date of birth helps us provide age-appropriate recommendations</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "diagnosis" && (
-            <motion.div
-              key="diagnosis"
-              custom={1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Inputbox
-                    id="diagnosis"
-                    type="text"
-                    label="Primary diagnosis"
-                    value={profile.primaryDiagnosis}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, primaryDiagnosis: e.target.value })}
-                    className="w-full"
-                    autoFocus
-                  />
-                  <p className="text-sm text-gray-500">
-                    This helps us customize your dashboard experience<br/> (e.g. Type 2 Diabetes)
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "medications" && (
-            <motion.div
-              key="medications"
-              custom={1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Inputbox
-                    id="medications"
-                    type="text"
-                    label="Current medications"
-                    value={profile.medications}
-                    onChange={(e) => setProfile({ ...profile, medications: e.target.value })}
-                    className="w-full"
-                    autoFocus
-                  />
-                  <p className="text-sm text-gray-500">
-                    This information is private and secure
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "contact" && (
-            <motion.div
-              key="contact"
-              custom={1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Inputbox
-                    id="phone"
-                    type="number"
-                    label="Phone number"
-                    value={profile.phone}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, phone: e.target.value })}
-                    className="w-full"
-                    autoFocus
-                  />
-                  <p className="text-sm text-gray-500">
-                    For appointment reminders and account recovery
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {currentStep === "avatar" && (
-            <motion.div
-              key="avatar"
-              custom={1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-6">
-                <div className="flex flex-col items-center space-y-4">
-                  {profile.avatar ? (
+                  {/* Success/Error State */}
+                  {profile.otp.length === 6 && (
                     <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="relative"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center"
                     >
-                      <Avatar className="w-32 h-32">
-                        <AvatarImage src={avatarPreview || ''} />
-                        <AvatarFallback>{profile.fullName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <button 
-                        onClick={() => {
-                          setProfile({ ...profile, avatar: null });
-                          setAvatarPreview(null);
-                        }}
-                        className="absolute top-0 right-0 bg-red-100 text-red-600 rounded-full p-1"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#7DDE92]/20 text-[#2D2D2D] rounded-full border border-[#7DDE92]/30">
+                        <Check className="w-4 h-4 text-[#7DDE92]" />
+                        <span className="text-sm font-medium">OTP Complete</span>
+                      </div>
                     </motion.div>
-                  ) : (
-                    <FileUpload
-                      onChange={handleFileChange}
-                      label="Upload profile photo (optional)"
-                      accept="image/*"
-                    />
-                  )}
-                  
-                  {profile.avatar && (
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      onClick={() => {
-                        setProfile({ ...profile, avatar: null });
-                        setAvatarPreview(null);
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      Remove photo
-                    </Button>
                   )}
                 </div>
               </div>
@@ -769,46 +961,119 @@ export default function SignupPage() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="absolute top-0 left-0 w-full"
             >
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Avatar className="w-10 h-10">
-                    {avatarPreview ? (
-                      <AvatarImage src={avatarPreview} />
-                    ) : null}
-                    <AvatarFallback className="bg-blue-100 text-blue-600">{profile.fullName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-medium">{profile.fullName}</h3>
-                    <p className="text-sm text-gray-500">{profile.email}</p>
+              <div className="space-y-6">
+                {/* Compact Profile Header */}
+                <div className="flex items-center gap-4 bg-gradient-to-r from-[#4BA3C7]/5 to-[#A484F3]/5 p-4 rounded-lg border border-[#E5E7EB]">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#4BA3C7] to-[#A484F3] rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">
+                      {profile.fullName.substring(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-[#2D2D2D]">
+                      {profile.fullName}
+                    </h3>
+                    <p className="text-[#6B7280] text-sm">
+                      Student ID: {profile.admissionNumber}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-[#7DDE92]/20 text-[#2D2D2D] rounded-full border border-[#7DDE92]/30">
+                    <Check className="w-4 h-4 text-[#7DDE92]" />
+                    <span className="text-sm font-medium">Ready</span>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Date of Birth</h3>
-                    <p>{profile.dateOfBirth ? format(profile.dateOfBirth, "PPP") : "Not provided"}</p>
+
+                {/* Compact Information Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Personal */}
+                  <div className="bg-white p-4 rounded-lg border border-[#E5E7EB]">
+                    <div>
+                      <div className="h-12 mb-4 bg-[#4BA3C7]/10 rounded-lg flex items-center justify-center">
+                        <User className="w-8 h-8 text-[#4BA3C7]" />
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs text-[#6B7280] mb-1">Gender</p>
+                          <p className="text-sm font-medium text-[#2D2D2D] capitalize">
+                            {profile.gender}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#6B7280] mb-1">
+                            Date of Birth
+                          </p>
+                          <p className="text-sm font-medium text-[#2D2D2D]">
+                            {profile.dateOfBirth
+                              ? format(profile.dateOfBirth, "MMM dd, yyyy")
+                              : "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Primary Diagnosis</h3>
-                    <p>{profile.primaryDiagnosis}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Medications</h3>
-                    <p>{profile.medications || "None provided"}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Phone</h3>
-                    <p>{profile.phone}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Two-Factor Authentication</h3>
-                    <p>{profile.use2FA ? "Enabled" : "Disabled"}</p>
+
+                  {/* Contact */}
+                  <div className="bg-white p-4 rounded-lg border border-[#E5E7EB]">
+                    <div>
+                      <div className="h-12 mb-4 bg-[#A484F3]/10 rounded-lg flex items-center justify-center">
+                        <svg
+                          className="w-8 h-8 text-[#A484F3]"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs text-[#6B7280] mb-1">
+                            Primary Phone
+                          </p>
+                          <p className="text-sm font-medium text-[#2D2D2D] font-mono">
+                            {profile.phone}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#6B7280] mb-1">Alternate</p>
+                          <p className="text-sm font-medium text-[#2D2D2D] font-mono">
+                            {profile.alternatePhone || (
+                              <span className="text-[#6B7280] italic">None</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Compact Terms */}
+                {/* <div className="bg-[#F9FAFB] p-4 mb-12 rounded-lg border border-[#E5E7EB]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#7DDE92] flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-[#2D2D2D] mb-1">
+                        Ready to Complete Registration
+                      </p>
+                      <p className="text-xs text-[#6B7280]">
+                        By clicking "Complete Registration", you agree to our
+                        terms of service. Your account will be created with the
+                        information above.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-[#4BA3C7]">
+                      <Shield className="w-3 h-3" />
+                      <span>Secure</span>
+                    </div>
+                  </div>
+                </div> */}
               </div>
             </motion.div>
           )}
@@ -819,38 +1084,42 @@ export default function SignupPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-2 text-sm text-red-600"
+          className="mt-2 text-sm text-[#F76E6E]"
         >
           {error}
         </motion.div>
       )}
-      
-      <div className="mt-8 -ml-5 flex justify-between">
+
+      <div className="mt-8 flex justify-between items-center">
         {currentStepIndex > 0 ? (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleBack}
-            className="flex items-center gap-1"
+            className="flex items-center gap-2 text-[#6B7280] hover:text-[#4BA3C7] hover:bg-[#4BA3C7]/5 px-4 py-2"
             disabled={isSubmitting}
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
         ) : (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => window.location.href = '/auth'}
-            className="flex items-center gap-1"
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => (window.location.href = "/auth")}
+            className="flex items-center gap-2 text-[#6B7280] hover:text-[#4BA3C7] hover:bg-[#4BA3C7]/5 px-4 py-2"
             disabled={isSubmitting}
           >
             <ArrowLeft className="h-4 w-4" /> Home
           </Button>
         )}
-        
-        <Button 
+
+        <Button
           onClick={handleNext}
-          className={`flex items-center gap-1 ${currentStep === "review" ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}`}
+          className={`flex items-center gap-2 px-6 py-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl ${
+            currentStep === "review"
+              ? "bg-gradient-to-r from-[#7DDE92] to-[#A2F0C1] hover:from-[#7DDE92]/90 hover:to-[#A2F0C1]/90 text-[#2D2D2D]"
+              : "bg-gradient-to-r from-[#4BA3C7] to-[#A484F3] hover:from-[#4BA3C7]/90 hover:to-[#A484F3]/90 text-white"
+          } border-0`}
           disabled={isSubmitting}
         >
           {isSubmitting ? (
@@ -858,56 +1127,28 @@ export default function SignupPage() {
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"
+                className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"
               />
               Processing...
             </span>
           ) : (
             <>
-              {currentStep === "review" ? "Complete Signup" : "Next"} 
-              <ArrowRight className="h-4 w-4 ml-1" />
+              {currentStep === "review" ? "Complete Registration" : "Next"}
+              <ArrowRight className="h-4 w-4" />
             </>
           )}
         </Button>
       </div>
-      
-      {currentStep === "email" && (
-        <div className="mt-6 text-center text-sm text-gray-500">
-          Already have an account? <a href="/login" className="text-blue-600 hover:underline">Log in</a>
-        </div>
-      )}
 
-      {/* Add Apple Sign-In button only on the email (first) step */}
-      {currentStep === "email" && (
-        <div className="mt-4">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or sign up with</span>
-            </div>
+      {currentStep === "name" && (
+        <>
+          <div className="mt-6 text-center text-sm text-[#6B7280]">
+            Already have an account?{" "}
+            <a href="/login" className="text-[#4BA3C7] hover:underline">
+              Log in
+            </a>
           </div>
-          
-          <Button 
-            onClick={handleAppleSignIn}
-            variant="outline" 
-            className="w-full mt-4 flex items-center justify-center space-x-2"
-            disabled={isSubmitting}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-            >
-              <path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516.024.034 1.52.087 2.475-1.258.955-1.345.762-2.391.728-2.43zm3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422.212-2.189 1.675-2.789 1.698-2.854.023-.065-.597-.79-1.254-1.157a3.692 3.692 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56.244.729.625 1.924 1.273 2.796.576.984 1.34 1.667 1.659 1.899.319.232 1.219.386 1.843.067.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758.347-.79.505-1.217.473-1.282z" />
-              <path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516.024.034 1.52.087 2.475-1.258.955-1.345.762-2.391.728-2.43zm3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422.212-2.189 1.675-2.789 1.698-2.854.023-.065-.597-.79-1.254-1.157a3.692 3.692 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56.244.729.625 1.924 1.273 2.796.576.984 1.34 1.667 1.659 1.899.319.232 1.219.386 1.843.067.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758.347-.79.505-1.217.473-1.282z" />
-            </svg>
-            <span>Sign up with Apple</span>
-          </Button>
-        </div>
+        </>
       )}
     </motion.div>
   );

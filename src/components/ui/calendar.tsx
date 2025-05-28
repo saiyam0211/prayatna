@@ -1,153 +1,188 @@
-"use client"
-
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker, useNavigation } from "react-day-picker"
-
 import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "./button"
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>
+export interface CalendarProps {
+  mode?: "single"
+  selected?: Date
+  onSelect?: (date: Date | undefined) => void
+  disabled?: (date: Date) => boolean
+  initialFocus?: boolean
+  captionLayout?: "dropdown-buttons"
+  fromYear?: number
+  toYear?: number
+  className?: string
+}
 
-function Calendar({
-  className,
-  classNames,
-  showOutsideDays = true,
-  ...props
-}: CalendarProps) {
+const Calendar: React.FC<CalendarProps> = ({
+  mode = "single",
+  selected,
+  onSelect,
+  disabled,
+  initialFocus,
+  captionLayout,
+  fromYear = 1900,
+  toYear = new Date().getFullYear(),
+  className
+}) => {
+  const [currentDate, setCurrentDate] = React.useState(selected || new Date())
+  const [viewDate, setViewDate] = React.useState(selected || new Date())
+
   const months = [
-    "January", "February", "March", "April", "May", "June", 
+    "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
-  ];
+  ]
 
-  // Custom caption component with month and year selection
-  function CustomCaption(props: any) {
-    const { goToMonth, nextMonth, previousMonth } = useNavigation();
-    const currentMonth = props.displayMonth;
-    
-    // Get month and year from displayed date
-    const month = currentMonth.getMonth();
-    const year = currentMonth.getFullYear();
-    
-    // Generate list of years (100 years in the past to current year)
-    const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 100 }, (_, i) => currentYear - 99 + i);
-    
-    // Handle month change
-    const handleMonthChange = (value: string) => {
-      const newMonth = new Date(currentMonth);
-      newMonth.setMonth(parseInt(value));
-      goToMonth(newMonth);
-    };
-    
-    // Handle year change
-    const handleYearChange = (value: string) => {
-      const newMonth = new Date(currentMonth);
-      newMonth.setFullYear(parseInt(value));
-      goToMonth(newMonth);
-    };
-    
-    return (
-      <div className="flex justify-center items-center space-x-2 pt-1 px-10 relative">
-        <div className="flex-1">
-          <Select value={month.toString()} onValueChange={handleMonthChange}>
-            <SelectTrigger className="h-8 w-full text-xs">
-              <SelectValue placeholder="Month" />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((monthName, i) => (
-                <SelectItem key={i} value={i.toString()}>
-                  {monthName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex-1">
-          <Select value={year.toString()} onValueChange={handleYearChange}>
-            <SelectTrigger className="h-8 w-full text-xs">
-              <SelectValue placeholder="Year" />
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <button
-          onClick={() => previousMonth && goToMonth(previousMonth)}
-          disabled={!previousMonth}
-          className="absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 flex items-center justify-center"
-          aria-label="Previous month"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        
-        <button
-          onClick={() => nextMonth && goToMonth(nextMonth)}
-          disabled={!nextMonth}
-          className="absolute right-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 flex items-center justify-center"
-          aria-label="Next month"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-    );
+  const daysOfWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
   }
 
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  }
+
+  const handleDateClick = (day: number) => {
+    const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
+    if (disabled && disabled(newDate)) return
+    setCurrentDate(newDate)
+    onSelect?.(newDate)
+  }
+
+  const handleMonthChange = (increment: number) => {
+    const newDate = new Date(viewDate)
+    newDate.setMonth(newDate.getMonth() + increment)
+    setViewDate(newDate)
+  }
+
+  const handleYearChange = (year: number) => {
+    const newDate = new Date(viewDate)
+    newDate.setFullYear(year)
+    setViewDate(newDate)
+  }
+
+  const handleMonthSelect = (monthIndex: number) => {
+    const newDate = new Date(viewDate)
+    newDate.setMonth(monthIndex)
+    setViewDate(newDate)
+  }
+
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(viewDate)
+    const firstDay = getFirstDayOfMonth(viewDate)
+    const days = []
+
+    // Empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="h-9 w-9" />)
+    }
+
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
+      const isSelected = selected && 
+        date.getDate() === selected.getDate() &&
+        date.getMonth() === selected.getMonth() &&
+        date.getFullYear() === selected.getFullYear()
+      const isDisabled = disabled && disabled(date)
+
+      days.push(
+        <button
+          key={day}
+          onClick={() => handleDateClick(day)}
+          disabled={isDisabled}
+          className={cn(
+            "h-9 w-9 text-sm font-normal rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500",
+            isSelected && "bg-blue-600 text-white hover:bg-blue-700",
+            isDisabled && "text-gray-300 cursor-not-allowed hover:bg-transparent"
+          )}
+        >
+          {day}
+        </button>
+      )
+    }
+
+    // Force 42 cells (6 weeks) to ensure all days are visible
+    while (days.length < 42) {
+      days.push(<div key={`trailing-${days.length}`} className="h-9 w-9" />)
+    }
+
+    return days
+  }
+
+  const years = Array.from({ length: toYear - fromYear + 1 }, (_, i) => fromYear + i)
+
   return (
-    <DayPicker
-      showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
-      classNames={{
-        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "hidden",
-        nav: "space-x-1 flex items-center hidden",
-        nav_button: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
-        ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-        day: cn(
-          buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
-        ),
-        day_range_end: "day-range-end",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
-        day_outside:
-          "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
-        day_disabled: "text-muted-foreground opacity-50",
-        day_range_middle:
-          "aria-selected:bg-accent aria-selected:text-accent-foreground",
-        day_hidden: "invisible",
-        ...classNames,
-      }}
-      components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
-        Caption: CustomCaption
-      }}
-      {...props}
-    />
+    <div className={cn("p-3 bg-white border rounded-lg shadow-lg w-[280px]", className)}>
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleMonthChange(-1)}
+          className="h-7 w-7"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        
+        <div className="flex items-center gap-2">
+          {captionLayout === "dropdown-buttons" ? (
+            <>
+              <select
+                value={viewDate.getMonth()}
+                onChange={(e) => handleMonthSelect(parseInt(e.target.value))}
+                className="text-sm border rounded px-2 py-1"
+              >
+                {months.map((month, index) => (
+                  <option key={month} value={index}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+              
+              <select
+                value={viewDate.getFullYear()}
+                onChange={(e) => handleYearChange(parseInt(e.target.value))}
+                className="text-sm border rounded px-2 py-1"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <h2 className="text-sm font-semibold">
+              {months[viewDate.getMonth()]} {viewDate.getFullYear()}
+            </h2>
+          )}
+        </div>
+        
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => handleMonthChange(1)}
+          className="h-7 w-7"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {daysOfWeek.map((day) => (
+          <div key={day} className="h-9 w-9 flex items-center justify-center text-xs font-medium text-gray-500">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 grid-rows-6 gap-1">
+        {renderCalendarDays()}
+      </div>
+    </div>
   )
 }
-Calendar.displayName = "Calendar"
 
-export { Calendar }
+export { Calendar } 

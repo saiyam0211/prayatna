@@ -2,32 +2,31 @@ import { useState } from 'react'
 
 interface UserData {
   fullName: string
+  gender?: "male" | "female" | "other" | ""
   dateOfBirth?: Date
-  primaryDiagnosis: string
-  medications: string
   phone: string
-  avatar?: File | null
+  alternatePhone?: string
+  admissionNumber?: string
+  aadhaarVerified?: boolean
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const [isLoading, setIsLoading] = useState(false)
   
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, 1500))
       
-      // For demo purposes, accept any email/password
-      console.log('Login successful:', { email })
-      
-      // Store user session (in real app, this would be JWT or session)
-      localStorage.setItem('isAuthenticated', 'true')
+      // Store user session
       localStorage.setItem('userEmail', email)
+      localStorage.setItem('isAuthenticated', 'true')
       
+      console.log('Login successful')
     } catch (error) {
       console.error('Login failed:', error)
-      throw new Error('Invalid credentials')
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -39,45 +38,52 @@ export const useAuth = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      console.log('Signup successful:', { email, userData })
-      
-      // Store user session
-      localStorage.setItem('isAuthenticated', 'true')
+      // Store user data
       localStorage.setItem('userEmail', email)
       localStorage.setItem('userData', JSON.stringify(userData))
+      localStorage.setItem('isAuthenticated', 'true')
       
+      console.log('Signup successful', { email, userData })
     } catch (error) {
       console.error('Signup failed:', error)
-      throw new Error('Signup failed')
+      throw error
     } finally {
       setIsLoading(false)
     }
   }
 
-  const loginWithApple = async () => {
+  const loginWithGoogle = async () => {
     setIsLoading(true)
     try {
-      // Simulate Apple sign-in
+      // Simulate Google OAuth
       await new Promise(resolve => setTimeout(resolve, 1500))
       
-      console.log('Apple sign-in successful')
+      // Mock Google user data
+      const googleUser = {
+        email: 'student@gmail.com',
+        fullName: 'Google Student',
+        avatar: 'https://lh3.googleusercontent.com/a/default-user'
+      }
       
-      // Store user session
+      localStorage.setItem('userEmail', googleUser.email)
+      localStorage.setItem('userData', JSON.stringify(googleUser))
       localStorage.setItem('isAuthenticated', 'true')
-      localStorage.setItem('userEmail', 'apple.user@example.com')
+      localStorage.setItem('authMethod', 'google')
       
+      console.log('Google login successful')
     } catch (error) {
-      console.error('Apple sign-in failed:', error)
-      throw new Error('Apple sign-in failed')
+      console.error('Google login failed:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
   }
 
   const logout = () => {
-    localStorage.removeItem('isAuthenticated')
     localStorage.removeItem('userEmail')
     localStorage.removeItem('userData')
+    localStorage.removeItem('isAuthenticated')
+    localStorage.removeItem('authMethod')
   }
 
   const isAuthenticated = () => {
@@ -87,7 +93,7 @@ export const useAuth = () => {
   return {
     login,
     signup,
-    loginWithApple,
+    loginWithGoogle,
     logout,
     isAuthenticated,
     isLoading

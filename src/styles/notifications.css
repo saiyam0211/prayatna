@@ -1,0 +1,31 @@
+/* Notification Page Styles */
+.btn-primary {
+  @apply px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors;
+}
+
+.btn-celebrate {
+  @apply px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors;
+}
+
+.btn-celebrate.celebrated {
+  @apply bg-gray-400 cursor-not-allowed;
+}
+
+.btn-accept {
+  @apply px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors;
+}
+
+.btn-decline {
+  @apply px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors;
+}
+
+/* Animation for celebrate button */
+@keyframes celebrate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.btn-celebrate:not(.celebrated):active {
+  animation: celebrate 0.3s ease-in-out;
+} 

@@ -6,49 +6,66 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+ 
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+ 
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
+ 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+ 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
+ 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
+ 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 222.2 84% 4.9%;
+ 
     --radius: 0.5rem;
   }
-
+ 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
+ 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
+ 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+ 
+    --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
+ 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
+ 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
+ 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
+ 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+ 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
@@ -58,13 +75,21 @@
   }
 }
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+/* Prevent scrolling on auth pages */
+body[data-page="auth"] {
+  @apply overflow-hidden;
+  height: 100vh;
+  position: fixed;
+  width: 100%;
 }
 
-/* Inputbox styles */
+:root {
+  --foreground-rgb: 45, 45, 45;
+  --background-start-rgb: 249, 250, 251;
+  --background-end-rgb: 242, 245, 247;
+}
+
+/* Inputbox styles - Updated with new colors */
 .inputbox {
   position: relative;
   margin-top: 10px;
@@ -79,7 +104,7 @@
   outline: none;
   box-shadow: none;
   border: none;
-  color: #fff;
+  color: #2D2D2D;
   font-size: 1em;
   letter-spacing: 0.05em;
   transition: 0.5s;
@@ -91,7 +116,7 @@
   left: 0;
   padding: 20px 10px 10px;
   font-size: 1em;
-  color: #1D4ED8;
+  color: #4BA3C7;
   letter-spacing: 0.05em;
   transition: 0.5s;
   pointer-events: none;
@@ -99,7 +124,7 @@
 
 .inputbox input:valid ~span,
 .inputbox input:focus ~span {
-  color: #1D4ED8;
+  color: #4BA3C7;
   transform: translateX(-10px) translateY(-34px);
   font-size: 0.75em;
 }
@@ -110,8 +135,7 @@
   bottom: 0;
   width: 100%;
   height: 2px;
-  background:#1D4ED8;
-  /* border: 1px solid #1D4ED8; */
+  background: #4BA3C7;
   border-radius: 4px;
   transition: 0.5s;
   pointer-events: none;
@@ -124,216 +148,195 @@
 }
 
 .dark .inputbox span {
-  color: #3B82F6;
+  color: #4BA3C7;
 }
 
 .dark .inputbox input:valid ~span,
 .dark .inputbox input:focus ~span {
-  color: #3B82F6;
+  color: #4BA3C7;
 }
 
 .dark .inputbox i {
-  background: #3B82F6;
+  background: #4BA3C7;
 }
 
 /* File Upload Folder Animation */
 .file-upload-container {
   --transition: 350ms;
   --folder-W: 120px;
-  --folder-H: 80px;
-  margin-top: 80px !important;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 10px;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  border-radius: 15px;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-  height: calc(var(--folder-H) * 2);
+  --folder-H: 100px;
+  --shadow: rgba(75, 163, 199, 0.4);
   position: relative;
-  width: 100%;
-  max-width: 250px;
-  margin: 1rem auto;
-  transition: transform var(--transition), box-shadow var(--transition);
+  width: var(--folder-W);
+  height: var(--folder-H);
+  margin: 0 auto;
+  transition: all var(--transition) ease-in-out;
 }
 
-.file-upload-dragging {
-  transform: scale(1.05);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-}
-
-.file-upload-dragging .folder {
-  animation-play-state: paused;
+.file-upload-container:hover {
+  transform: scale(1.1);
 }
 
 .folder {
-  position: absolute;
-  top: -20px;
-  left: calc(50% - 60px);
-  animation: float 2.5s infinite ease-in-out;
-  transition: transform var(--transition) ease;
-}
-
-.folder:hover {
-  transform: scale(1.05);
-}
-
-.folder .front-side,
-.folder .back-side {
-  position: absolute;
-  transition: transform var(--transition);
-  transform-origin: bottom center;
-}
-
-.folder .back-side::before,
-.folder .back-side::after {
-  content: "";
-  display: block;
-  background-color: white;
-  opacity: 0.5;
-  z-index: 0;
-  width: var(--folder-W);
-  height: var(--folder-H);
-  position: absolute;
-  transform-origin: bottom center;
-  border-radius: 15px;
-  transition: transform 350ms;
-  z-index: 0;
-}
-
-.file-upload-container:hover .back-side::before {
-  transform: rotateX(-5deg) skewX(5deg);
-}
-.file-upload-container:hover .back-side::after {
-  transform: rotateX(-15deg) skewX(12deg);
-}
-
-.folder .front-side {
-  z-index: 1;
-}
-
-.file-upload-container:hover .front-side {
-  transform: rotateX(-40deg) skewX(15deg);
-}
-
-.folder .tip {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  width: 80px;
-  height: 20px;
-  border-radius: 12px 12px 0 0;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  position: absolute;
-  top: -10px;
-  z-index: 2;
-}
-
-.folder .cover {
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  width: var(--folder-W);
-  height: var(--folder-H);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-  border-radius: 10px;
-}
-
-.custom-file-upload {
-  font-size: 1.1em;
-  color: #ffffff;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 10px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: background var(--transition) ease;
-  display: inline-block;
   width: 100%;
-  padding: 10px 35px;
+  height: 100%;
+  background: linear-gradient(135deg, #4BA3C7, #A484F3);
+  border-radius: 8px;
   position: relative;
+  box-shadow: 0 4px 8px var(--shadow);
+  transition: all var(--transition) ease-in-out;
 }
 
-.custom-file-upload:hover {
-  background: rgba(255, 255, 255, 0.4);
+.folder::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 20px;
+  width: 30px;
+  height: 12px;
+  background: linear-gradient(135deg, #A484F3, #7DDE92);
+  border-radius: 4px 4px 0 0;
 }
 
-.custom-file-upload input[type="file"] {
-  display: none;
+.folder-upload {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+  gap: 8px;
 }
 
-@keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-20px);
-  }
-
-  100% {
-    transform: translateY(0px);
-  }
+.upload-icon {
+  transition: all var(--transition) ease-in-out;
 }
 
-/* Liquid Switch */
+.file-upload-container:hover .upload-icon {
+  transform: scale(1.2) translateY(-4px);
+}
+
+/* Liquid switch animation */
 .liquid-switch {
-  --primary: #000;
-  --secondary: #ffffff;
-  --time: 0.6s;
-  appearance: none;
   position: relative;
+  width: 60px;
+  height: 30px;
+  background: #E5E7EB;
+  border-radius: 15px;
+  transition: all 0.3s ease;
   cursor: pointer;
-  width: 3.5em;
-  aspect-ratio: 2 / 1;
-  background: var(--primary);
-  border-radius: 20em;
-  box-shadow: 0 0 0 0.15em var(--secondary), 0 0 0 0.2em rgba(37, 99, 235, 0.3);
-  transform: translateX(0.5px);
-  transition: transform var(--time) cubic-bezier(0.75, 0, 0.75, 10);
-  filter: blur(0.1em) contrast(10);
-  mix-blend-mode: darken;
   overflow: hidden;
 }
 
-.liquid-switch::before {
-  content: "";
+.liquid-switch.checked {
+  background: #7DDE92;
+}
+
+.liquid-switch-handle {
   position: absolute;
-  width: 200%;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.liquid-switch.checked .liquid-switch-handle {
+  transform: translateX(30px);
+}
+
+.liquid-switch::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
-  transform: translate(-25%, -50%);
-  left: 50%;
-  top: 50%;
-  background: radial-gradient(
-      closest-side circle at 12.5% 50%,
-      var(--secondary) 50%,
-      #0000 0
-    ),
-    radial-gradient(
-      closest-side circle at 87.5% 50%,
-      var(--secondary) 50%,
-      #0000 0
-    ),
-    #000;
-  transition: transform var(--time) cubic-bezier(0.75, 0, 0.75, 1.3);
+  background: radial-gradient(circle at center, rgba(125, 222, 146, 0.3) 0%, transparent 70%);
+  border-radius: 15px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.liquid-switch:checked {
-  transform: translateX(-0.5px);
+.liquid-switch.checked::before {
+  opacity: 1;
+  animation: ripple 0.6s ease-out;
 }
 
-.liquid-switch:checked::before {
-  transform: translate(-75%, -50%);
-}
-
-.dark .liquid-switch {
-  --primary: #000;
-  --secondary: #1e293b;
-  filter: blur(0.1em) contrast(15);
-}
-
-/* Fix for Safari to ensure the switch is visible properly */
-@supports (-webkit-appearance: none) {
-  .liquid-switch {
-    -webkit-appearance: none;
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
   }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Loading animation spinner */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #E5E7EB;
+  border-top: 4px solid #4BA3C7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #E5E7EB;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4BA3C7, #7DDE92);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Student-themed animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes bounce-in {
+  0% { 
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.bounce-in {
+  animation: bounce-in 0.6s ease-out;
 }
