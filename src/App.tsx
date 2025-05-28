@@ -8,6 +8,12 @@ import AuthLayout from './components/AuthLayout'
 import ExplorePage from './pages/explore/index'
 import DashboardPage from './pages/dashboard/studentDashboard'
 import './App.css'
+import ConnectionLayout from './pages/network/ConnectionLayout'
+import NetworkPage from './pages/network/NetworkPage'
+import ConnectionsPage from './pages/network/ConnectionsPage'
+import PeopleIFollowPage from './pages/network/PeopleIFollowPage'
+import EventsPage from './pages/network/EventsPage'
+import PagesIFollow from './pages/network/PagesIFollow'
 
 // Component to handle body attributes
 function BodyAttributeHandler() {
@@ -46,6 +52,15 @@ function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+
+        {/* Network */}
+        <Route path="/network" element={<ConnectionLayout />}>
+          <Route index element={<NetworkPage />} />
+          <Route path="connections" element={<ConnectionsPage />} />
+          <Route path="people-i-follow" element={<PeopleIFollowPage />} />
+          <Route path="events" element={<EventsPage />} />
+          <Route path="pages" element={<PagesIFollow />} />
+        </Route>
       </Routes>
     </Router>
   )
