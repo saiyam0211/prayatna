@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Camera, Image, Video, Calendar, Smile, Send, ThumbsUp, Award, MapPin, GraduationCap, Users, TrendingUp, Plus, Globe, Lock, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Camera, Image, Video, Calendar, Smile, Send, ThumbsUp, Award, MapPin, GraduationCap, Users, TrendingUp, Plus, Globe, Lock, Zap, Settings, Sparkles } from 'lucide-react';
 
 type PostType = 'achievement' | 'project' | 'study' | 'general';
 
@@ -26,7 +26,27 @@ interface Post {
 }
 
 const ExplorePage = () => {
-  const [posts, setPosts] = useState<Post[]>([
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [newPost, setNewPost] = useState('');
+  const [postType, setPostType] = useState<PostType>('general');
+  const [showComments, setShowComments] = useState<number | null>(null);
+  const [isPosting, setIsPosting] = useState(false);
+  const [isRewriting, setIsRewriting] = useState(false);
+
+  const currentUser = {
+    name: 'Sam Wilson',
+    grade: '11th Grade',
+    school: 'Lincoln High School',
+    avatar: '😊',
+    followers: 234,
+    following: 189,
+    posts: 47,
+    achievements: ['Honor Roll', 'Debate Champion', 'Coding Club Leader'],
+    isVerified: false
+  };
+
+  // Initial sample posts
+  const initialPosts: Post[] = [
     {
       id: 1,
       user: {
@@ -102,20 +122,212 @@ const ExplorePage = () => {
       isBookmarked: true,
       type: 'achievement'
     }
-  ]);
+  ];
 
-  const [newPost, setNewPost] = useState('');
-  const [showComments, setShowComments] = useState<number | null>(null);
+  // Load posts from localStorage on component mount
+  useEffect(() => {
+    const savedPosts = localStorage.getItem('prayatna_posts');
+    if (savedPosts) {
+      try {
+        const parsedPosts = JSON.parse(savedPosts);
+        setPosts(parsedPosts);
+      } catch (error) {
+        console.error('Error loading posts from localStorage:', error);
+        setPosts(initialPosts);
+        localStorage.setItem('prayatna_posts', JSON.stringify(initialPosts));
+      }
+    } else {
+      setPosts(initialPosts);
+      localStorage.setItem('prayatna_posts', JSON.stringify(initialPosts));
+    }
+  }, []);
 
-  const currentUser = {
-    name: 'Sam Wilson',
-    grade: '11th Grade',
-    school: 'Lincoln High School',
-    avatar: '😊',
-    followers: 234,
-    following: 189,
-    posts: 47,
-    achievements: ['Honor Roll', 'Debate Champion', 'Coding Club Leader'],
+  // Save posts to localStorage whenever posts state changes
+  useEffect(() => {
+    if (posts.length > 0) {
+      localStorage.setItem('prayatna_posts', JSON.stringify(posts));
+    }
+  }, [posts]);
+
+  // Function to format timestamp
+  const formatTimestamp = (date: Date): string => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  // Function to show toast notifications
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-20 right-4 px-6 py-3 rounded-xl shadow-lg z-50 transition-all transform ${
+      type === 'success' 
+        ? 'bg-green-500 text-white animate-bounce' 
+        : 'bg-red-500 text-white'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.transform = 'translateX(400px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  };
+
+  // Function to handle AI rewrite
+  const handleAIRewrite = async () => {
+    if (!newPost.trim()) {
+      showToast('❌ Please write some content first before using AI rewrite!', 'error');
+      return;
+    }
+    
+    setIsRewriting(true);
+    
+    try {
+      // Simulate AI processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mock AI enhancement - in a real app, this would call an AI API
+      const enhancements = {
+        'general': [
+          'Hey everyone! 🌟 ',
+          'Just wanted to share this amazing experience! ✨ ',
+          'Excited to tell you all about ',
+          'Can\'t wait to share this with the community! 🎉 '
+        ],
+        'achievement': [
+          'I\'m thrilled to announce that I just ',
+          '🏆 Proud moment alert! I successfully ',
+          'Feeling incredibly grateful - I just achieved ',
+          '✨ Amazing news! I\'m excited to share that I '
+        ],
+        'project': [
+          '🚀 Project update! I\'ve been working on ',
+          'Super excited about this new project: ',
+          '💡 Innovation in progress! Currently building ',
+          '🔥 Passionate about this latest creation: '
+        ],
+        'study': [
+          '📚 Study session success! Just completed ',
+          '🎓 Learning journey update: ',
+          '💪 Academic milestone reached! ',
+          '🧠 Knowledge gained from '
+        ]
+      };
+      
+      const postEndings = [
+        ' Looking forward to hearing your thoughts! 💭',
+        ' Would love to connect with others interested in this! 🤝',
+        ' Excited to share more updates soon! 📈',
+        ' Feel free to ask any questions! ❓',
+        ' Can\'t wait to see what\'s next! 🌟',
+        ' Thanks for all the support along the way! 🙏'
+      ];
+      
+      // Get random enhancement based on post type
+      const typeEnhancements = enhancements[postType] || enhancements.general;
+      const randomStart = typeEnhancements[Math.floor(Math.random() * typeEnhancements.length)];
+      const randomEnd = postEndings[Math.floor(Math.random() * postEndings.length)];
+      
+      // Clean up the original post and enhance it
+      let enhancedPost = newPost.trim();
+      
+      // Add engaging start if it doesn't already have one
+      if (!enhancedPost.match(/^(Hey|Hi|Excited|Amazing|Just|I'm|Super|Thrilled)/i)) {
+        enhancedPost = randomStart + enhancedPost.toLowerCase();
+      }
+      
+      // Ensure proper capitalization after punctuation
+      enhancedPost = enhancedPost.replace(/([.!?]\s*)([a-z])/g, (match, punctuation, letter) => 
+        punctuation + letter.toUpperCase()
+      );
+      
+      // Add engaging ending if it doesn't already have one
+      if (!enhancedPost.match(/[.!?]$/)) {
+        enhancedPost += '!';
+      }
+      
+      if (!enhancedPost.includes('looking forward') && 
+          !enhancedPost.includes('feel free') && 
+          !enhancedPost.includes('would love') &&
+          !enhancedPost.includes('thanks') &&
+          !enhancedPost.includes('excited')) {
+        enhancedPost += randomEnd;
+      }
+      
+      // Update the post content
+      setNewPost(enhancedPost);
+      showToast('✨ Post enhanced with AI! Review and edit as needed.', 'success');
+      
+    } catch (error) {
+      console.error('Error with AI rewrite:', error);
+      showToast('❌ AI rewrite failed. Please try again.', 'error');
+    } finally {
+      setIsRewriting(false);
+    }
+  };
+
+  // Function to create a new post
+  const handleCreatePost = async () => {
+    if (!newPost.trim()) return;
+    
+    setIsPosting(true);
+    
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newPostData: Post = {
+        id: Date.now(), // Simple ID generation
+        user: currentUser,
+        content: newPost.trim(),
+        timestamp: formatTimestamp(new Date()),
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        isLiked: false,
+        isBookmarked: false,
+        type: postType
+      };
+
+      // Add new post to the beginning of the posts array
+      setPosts(prevPosts => [newPostData, ...prevPosts]);
+      
+      // Clear the form
+      setNewPost('');
+      setPostType('general');
+      
+      showToast('✅ Post created successfully!', 'success');
+      
+    } catch (error) {
+      console.error('Error creating post:', error);
+      showToast('❌ Failed to create post. Please try again.', 'error');
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  // Function to clear all posts (for testing)
+  const handleClearPosts = () => {
+    if (window.confirm('Are you sure you want to clear all posts? This action cannot be undone.')) {
+      setPosts([]);
+      localStorage.removeItem('prayatna_posts');
+      showToast('🗑️ All posts cleared!', 'success');
+    }
+  };
+
+  // Function to reset to initial posts
+  const handleResetPosts = () => {
+    setPosts(initialPosts);
+    localStorage.setItem('prayatna_posts', JSON.stringify(initialPosts));
+    showToast('🔄 Posts reset to initial state!', 'success');
   };
 
   const handleLike = (postId: number) => {
@@ -262,15 +474,45 @@ const ExplorePage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 transition-colors">
                     <span className="text-sm text-gray-700 font-medium">Posts Created</span>
-                    <span className="font-bold text-lg text-green-600">3</span>
+                    <span className="font-bold text-lg text-green-600">{posts.filter(post => post.user.name === currentUser.name).length}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 transition-colors">
-                    <span className="text-sm text-gray-700 font-medium">Connections Made</span>
-                    <span className="font-bold text-lg text-purple-600">12</span>
+                    <span className="text-sm text-gray-700 font-medium">Total Posts</span>
+                    <span className="font-bold text-lg text-purple-600">{posts.length}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 transition-colors">
-                    <span className="text-sm text-gray-700 font-medium">Study Groups Joined</span>
-                    <span className="font-bold text-lg text-blue-600">2</span>
+                    <span className="text-sm text-gray-700 font-medium">Total Likes</span>
+                    <span className="font-bold text-lg text-blue-600">{posts.reduce((sum, post) => sum + post.likes, 0)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Developer Tools Card */}
+              <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-sm text-gray-800 flex items-center">
+                    <Settings className="w-4 h-4 mr-2 text-blue-500" />
+                    Developer Tools
+                  </h4>
+                  <span className="text-xs text-gray-500 bg-blue-100 px-2 py-1 rounded-full">Debug</span>
+                </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleResetPosts}
+                    className="w-full flex items-center justify-center space-x-2 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 transition-colors text-blue-700 font-medium"
+                  >
+                    <span>🔄</span>
+                    <span className="text-sm">Reset Posts</span>
+                  </button>
+                  <button
+                    onClick={handleClearPosts}
+                    className="w-full flex items-center justify-center space-x-2 p-3 rounded-xl bg-gradient-to-r from-red-50 to-pink-50 hover:from-red-100 hover:to-pink-100 transition-colors text-red-700 font-medium"
+                  >
+                    <span>🗑️</span>
+                    <span className="text-sm">Clear All Posts</span>
+                  </button>
+                  <div className="text-xs text-gray-500 text-center mt-3 p-2 bg-gray-50 rounded-lg">
+                    Posts are stored in localStorage
                   </div>
                 </div>
               </div>
@@ -291,6 +533,32 @@ const ExplorePage = () => {
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
                   </div>
                   <div className="flex-1">
+                    {/* Post Type Selection */}
+                    <div className="flex items-center space-x-2 mb-4">
+                      <span className="text-sm font-medium text-gray-600">Post Type:</span>
+                      <div className="flex items-center space-x-2">
+                        {[
+                          { type: 'general' as PostType, label: 'General', icon: '💬', color: 'gray' },
+                          { type: 'achievement' as PostType, label: 'Achievement', icon: '🏆', color: 'yellow' },
+                          { type: 'project' as PostType, label: 'Project', icon: '🚀', color: 'blue' },
+                          { type: 'study' as PostType, label: 'Study', icon: '📚', color: 'green' }
+                        ].map((typeOption) => (
+                          <button
+                            key={typeOption.type}
+                            onClick={() => setPostType(typeOption.type)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center space-x-1 ${
+                              postType === typeOption.type
+                                ? `bg-${typeOption.color}-100 text-${typeOption.color}-800 border-2 border-${typeOption.color}-300 transform scale-105`
+                                : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>{typeOption.icon}</span>
+                            <span>{typeOption.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="relative">
                       <textarea
                         value={newPost}
@@ -298,39 +566,87 @@ const ExplorePage = () => {
                         placeholder="Share something amazing with your classmates... ✨"
                         className="w-full resize-none border-none outline-none text-gray-700 placeholder-gray-400 text-lg leading-relaxed bg-gray-50 rounded-2xl p-4 focus:bg-white focus:shadow-md transition-all duration-200"
                         rows={3}
+                        disabled={isPosting}
                       />
                       <div className="absolute top-4 right-4">
                         <Smile className="w-5 h-5 text-gray-400 hover:text-yellow-500 cursor-pointer transition-colors" />
                       </div>
                     </div>
                     
+                    {/* Character Count */}
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="text-xs text-gray-400">
+                        {newPost.length}/500 characters
+                      </div>
+                      {newPost.length > 450 && (
+                        <div className="text-xs text-orange-500 font-medium">
+                          {500 - newPost.length} characters remaining
+                        </div>
+                      )}
+                    </div>
+                    
                     <div className="flex items-center justify-between mt-6">
                       <div className="flex items-center space-x-6">
-                        <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-all duration-200 transform hover:scale-105 group">
+                        <button 
+                          className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-all duration-200 transform hover:scale-105 group"
+                          disabled={isPosting}
+                        >
                           <div className="p-2 rounded-xl bg-blue-50 group-hover:bg-blue-100 transition-colors">
                             <Camera className="w-5 h-5" />
                           </div>
                           <span className="text-sm font-medium">Photo</span>
                         </button>
-                        <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-all duration-200 transform hover:scale-105 group">
+                        <button 
+                          className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-all duration-200 transform hover:scale-105 group"
+                          disabled={isPosting}
+                        >
                           <div className="p-2 rounded-xl bg-green-50 group-hover:bg-green-100 transition-colors">
                             <Video className="w-5 h-5" />
                           </div>
                           <span className="text-sm font-medium">Video</span>
                         </button>
+                        <button 
+                          onClick={handleAIRewrite}
+                          disabled={!newPost.trim() || isRewriting || isPosting}
+                          className="flex items-center space-x-2 text-gray-500 hover:text-purple-500 transition-all duration-200 transform hover:scale-105 group disabled:opacity-50"
+                        >
+                          <div className="p-2 rounded-xl bg-purple-50 group-hover:bg-purple-100 transition-colors">
+                            {isRewriting ? (
+                              <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Sparkles className="w-5 h-5" />
+                            )}
+                          </div>
+                          <span className="text-sm font-medium">
+                            {isRewriting ? 'Rewriting...' : 'Rewrite with AI'}
+                          </span>
+                        </button>
                       </div>
                       
                       <div className="flex items-center space-x-3">
                         <button 
-                          className="px-8 py-3 rounded-xl text-white font-medium transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none shadow-lg hover:shadow-xl"
+                          onClick={handleCreatePost}
+                          disabled={!newPost.trim() || newPost.length > 500 || isPosting}
+                          className={`px-8 py-3 rounded-xl text-white font-medium transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none shadow-lg hover:shadow-xl flex items-center space-x-2 ${
+                            isPosting ? 'cursor-not-allowed' : ''
+                          }`}
                           style={{ 
-                            background: newPost.trim() 
+                            background: newPost.trim() && newPost.length <= 500 && !isPosting
                               ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
                               : '#e5e7eb'
                           }}
-                          disabled={!newPost.trim()}
                         >
-                          Post
+                          {isPosting ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Posting...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              <span>Post</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
