@@ -44,6 +44,11 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
       path: '/explore',
     },
     {
+      label: 'Gameplay',
+      icon: <Zap size={20} />,
+      path: '/gameplay', // Make sure this matches your gameplay route
+    },
+    {
       label: 'Network',
       icon: <Users size={20} />,
       path: '/network',
@@ -258,4 +263,4 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
   );
 };
 
-export default Navbar; 
+export default Navbar;
