@@ -79,7 +79,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
   };
 
   const currentUser = {
-    name: 'Satyabrata Mohanty',
+    name: 'Riya',
     email: 'satya@student.prayatna.edu',
     avatar: '🎓',
     role: 'Student'

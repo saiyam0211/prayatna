@@ -79,8 +79,8 @@ const StudentDashboard = () => {
 
   // Student Profile Data
   const profile = {
-    name: "Satyabrata Mohanty",
-    school: "DAV Public School",
+    name: "Riya",
+    school: "PW Gurukulam",
     class: "Grade 12",
     hobbies: ["Reading", "Coding", "Basketball"],
     goals: ["Learn AI/ML", "Build Portfolio", "Join Tech Club"],

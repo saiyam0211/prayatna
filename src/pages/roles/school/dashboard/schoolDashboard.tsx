@@ -71,7 +71,162 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Breadcrumb from "@/components/Breadcrumb";
-import { useAuth } from "@/lib/auth";
+
+// Mock Data
+const mockProfile = {
+  name: "PRAYATNA School",
+  establishedYear: "2020",
+  address: "123 Education Street",
+  city: "Mumbai",
+  state: "Maharashtra",
+  pincode: "400001",
+  phone: "+91 9876543210",
+  email: "info@prayatnaschool.edu.in",
+  principalName: "Dr. Rajesh Kumar",
+  logo: "/logo.png"
+};
+
+const mockStats = {
+  totalStudents: 450,
+  totalTeachers: 35,
+  totalUsers: 485,
+  activeUsers: 412,
+  engagementRate: "85%"
+};
+
+const mockStudents = [
+  {
+    _id: "1",
+    name: "Aarav Sharma",
+    enrollmentId: "PRY2024001",
+    phoneNumber: "+91 9876543211",
+    avatar: "/student1.jpg",
+    isActive: true
+  },
+  {
+    _id: "2",
+    name: "Priya Patel",
+    enrollmentId: "PRY2024002",
+    phoneNumber: "+91 9876543212",
+    avatar: "/student2.jpg",
+    isActive: true
+  },
+  {
+    _id: "3",
+    name: "Rahul Singh",
+    enrollmentId: "PRY2024003",
+    phoneNumber: "+91 9876543213",
+    avatar: "/student3.jpg",
+    isActive: false
+  }
+];
+
+const mockTeachers = [
+  {
+    _id: "1",
+    name: "Ms. Anita Verma",
+    department: "Mathematics",
+    experience: 8,
+    email: "anita.verma@prayatna.edu.in",
+    avatar: "/teacher1.jpg",
+    isActive: true
+  },
+  {
+    _id: "2",
+    name: "Mr. Suresh Kumar",
+    department: "Science",
+    experience: 12,
+    email: "suresh.kumar@prayatna.edu.in",
+    avatar: "/teacher2.jpg",
+    isActive: true
+  },
+  {
+    _id: "3",
+    name: "Ms. Pooja Gupta",
+    department: "English",
+    experience: 5,
+    email: "pooja.gupta@prayatna.edu.in",
+    avatar: "/teacher3.jpg",
+    isActive: true
+  }
+];
+
+const mockFlaggedPosts = [
+  {
+    _id: "1",
+    content: "This post contains inappropriate language that needs review by school administration.",
+    author: { name: "John Doe" },
+    flagReason: "Inappropriate Language",
+    createdAt: "2024-01-15"
+  },
+  {
+    _id: "2",
+    content: "Sharing unauthorized content about upcoming exams and test answers.",
+    author: { name: "Jane Smith" },
+    flagReason: "Academic Dishonesty",
+    createdAt: "2024-01-14"
+  }
+];
+
+const mockRecentPosts = [
+  {
+    _id: "1",
+    content: "Just completed my science project on renewable energy! Really excited to present it tomorrow. 🌱⚡",
+    author: { 
+      name: "Aarav Sharma",
+      avatar: "/student1.jpg"
+    },
+    likes: [1, 2, 3, 4, 5],
+    comments: [1, 2],
+    createdAt: "2 hours ago"
+  },
+  {
+    _id: "2",
+    content: "Our debate competition was amazing today! Learned so much about current affairs and public speaking. 🎤",
+    author: { 
+      name: "Priya Patel",
+      avatar: "/student2.jpg"
+    },
+    likes: [1, 2, 3],
+    comments: [1],
+    createdAt: "4 hours ago"
+  },
+  {
+    _id: "3",
+    content: "Mathematics quiz was challenging but fun! Thanks to Ms. Verma for the excellent preparation. 📊",
+    author: { 
+      name: "Rahul Singh",
+      avatar: "/student3.jpg"
+    },
+    likes: [1, 2],
+    comments: [],
+    createdAt: "6 hours ago"
+  }
+];
+
+const mockSchoolPosts = [
+  {
+    _id: "1",
+    title: "Annual Sports Day",
+    content: "Annual Sports Day will be held on January 25th. All students must participate in at least one event.",
+    category: "Event",
+    createdAt: "1 day ago"
+  },
+  {
+    _id: "2",
+    title: "Parent-Teacher Meeting",
+    content: "Monthly parent-teacher meeting scheduled for January 20th from 2 PM to 5 PM.",
+    category: "Notice",
+    createdAt: "2 days ago"
+  },
+  {
+    _id: "3",
+    title: "Science Exhibition",
+    content: "Prepare your innovative science projects for the upcoming exhibition on February 1st.",
+    category: "Announcement",
+    createdAt: "3 days ago"
+  }
+];
 
 // Modal Component
 const Modal = ({ isOpen, onClose, title, children }: {
@@ -119,11 +274,8 @@ const Progress = ({
 );
 
 const SchoolDashboard = () => {
-  const { school } = useAuth();
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   
   // Form states for modals
   const [studentForm, setStudentForm] = useState({
@@ -140,48 +292,19 @@ const SchoolDashboard = () => {
   });
   
   const [submitting, setSubmitting] = useState(false);
-  const [students, setStudents] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [flaggedPosts, setFlaggedPosts] = useState([]);
-  const [recentPosts, setRecentPosts] = useState([]);
-  const [schoolPosts, setSchoolPosts] = useState([]);
+  const [students, setStudents] = useState(mockStudents);
+  const [teachers, setTeachers] = useState(mockTeachers);
+  const [flaggedPosts, setFlaggedPosts] = useState(mockFlaggedPosts);
+  const [recentPosts, setRecentPosts] = useState(mockRecentPosts);
+  const [schoolPosts, setSchoolPosts] = useState(mockSchoolPosts);
 
-  // Fetch dashboard data on component mount
+  // Simulate loading
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const response = await school.getDashboard();
-      setDashboardData(response.data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
-      console.error('Dashboard fetch error:', err);
-    } finally {
+    const timer = setTimeout(() => {
       setLoading(false);
-    }
-  };
-
-  const fetchStudents = async () => {
-    try {
-      const response = await school.getStudents();
-      setStudents(response.data.students || []);
-    } catch (err) {
-      console.error('Failed to fetch students:', err);
-    }
-  };
-
-  const fetchTeachers = async () => {
-    try {
-      const response = await school.getTeachers();
-      setTeachers(response.data.teachers || []);
-    } catch (err) {
-      console.error('Failed to fetch teachers:', err);
-    }
-  };
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,18 +312,29 @@ const SchoolDashboard = () => {
     
     try {
       setSubmitting(true);
-      await school.createStudent(studentForm);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Add new student to mock data
+      const newStudent = {
+        _id: Date.now().toString(),
+        name: `Student ${students.length + 1}`,
+        enrollmentId: studentForm.enrollmentId,
+        phoneNumber: studentForm.phoneNumber,
+        avatar: "/default-student.jpg",
+        isActive: true
+      };
+      
+      setStudents(prev => [...prev, newStudent]);
       
       // Reset form and close modal
       setStudentForm({ enrollmentId: '', phoneNumber: '' });
       setActiveModal(null);
       
-      // Refresh dashboard data
-      await fetchDashboardData();
-      
       alert('Student record created successfully!');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create student');
+      alert('Failed to create student');
     } finally {
       setSubmitting(false);
     }
@@ -212,7 +346,22 @@ const SchoolDashboard = () => {
     
     try {
       setSubmitting(true);
-      await school.createTeacher(teacherForm);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Add new teacher to mock data
+      const newTeacher = {
+        _id: Date.now().toString(),
+        name: teacherForm.name,
+        email: teacherForm.email,
+        department: teacherForm.department,
+        experience: teacherForm.experience,
+        avatar: "/default-teacher.jpg",
+        isActive: true
+      };
+      
+      setTeachers(prev => [...prev, newTeacher]);
       
       // Reset form and close modal
       setTeacherForm({
@@ -224,26 +373,16 @@ const SchoolDashboard = () => {
       });
       setActiveModal(null);
       
-      // Refresh dashboard data
-      await fetchDashboardData();
-      
       alert('Teacher account created successfully!');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create teacher');
+      alert('Failed to create teacher');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const openModal = async (modalType: string) => {
+  const openModal = (modalType: string) => {
     setActiveModal(modalType);
-    
-    // Fetch data based on modal type
-    if (modalType === 'students') {
-      await fetchStudents();
-    } else if (modalType === 'teachers') {
-      await fetchTeachers();
-    }
   };
 
   const closeModal = () => {
@@ -259,27 +398,15 @@ const SchoolDashboard = () => {
     });
   };
 
-  const handleApprovePost = async (postId: string) => {
-    try {
-      // API call to approve flagged post
-      console.log('Approving post:', postId);
-      // Remove from flagged posts after approval
-      setFlaggedPosts(prev => prev.filter((post: any) => post._id !== postId));
-    } catch (err) {
-      console.error('Failed to approve post:', err);
-    }
+  const handleApprovePost = (postId: string) => {
+    setFlaggedPosts(prev => prev.filter(post => post._id !== postId));
+    alert('Post approved successfully!');
   };
 
-  const handleDeletePost = async (postId: string) => {
-    try {
-      // API call to delete post
-      console.log('Deleting post:', postId);
-      // Remove from posts list after deletion
-      setFlaggedPosts(prev => prev.filter((post: any) => post._id !== postId));
-      setRecentPosts(prev => prev.filter((post: any) => post._id !== postId));
-    } catch (err) {
-      console.error('Failed to delete post:', err);
-    }
+  const handleDeletePost = (postId: string) => {
+    setFlaggedPosts(prev => prev.filter(post => post._id !== postId));
+    setRecentPosts(prev => prev.filter(post => post._id !== postId));
+    alert('Post deleted successfully!');
   };
 
   if (loading) {
@@ -292,24 +419,6 @@ const SchoolDashboard = () => {
       </div>
     );
   }
-
-  if (error) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <XCircle className="w-12 h-12 text-red-500 mb-4 mx-auto" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Error Loading Dashboard</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Button onClick={fetchDashboardData} className="bg-blue-600 hover:bg-blue-700">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const { profile, stats, recentPosts: dashboardRecentPosts, flaggedPosts: dashboardFlaggedPosts, schoolPosts: dashboardSchoolPosts } = dashboardData || {};
 
   return (
     <>
@@ -356,7 +465,7 @@ const SchoolDashboard = () => {
                       <div className="relative mb-4">
                         <div className="w-20 h-20 rounded-full bg-white p-1 shadow-xl">
                           <Avatar className="w-full h-full">
-                            <AvatarImage src={profile?.logo} className="object-cover" />
+                            <AvatarImage src={mockProfile.logo} className="object-cover" />
                             <AvatarFallback className="bg-gradient-to-br from-blue-100 to-purple-100 text-xl font-bold">
                               <School className="w-8 h-8 text-blue-600" />
                             </AvatarFallback>
@@ -369,10 +478,10 @@ const SchoolDashboard = () => {
 
                       <div className="text-center mb-6">
                         <h3 className="font-bold text-lg bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent leading-tight mb-1">
-                          {profile?.name || 'School Name'}
+                          {mockProfile.name || 'School Name'}
                         </h3>
                         <p className="text-gray-500 font-medium text-sm">
-                          Est. {profile?.establishedYear || '2023'}
+                          Est. {mockProfile.establishedYear || '2023'}
                         </p>
                       </div>
                     </div>
@@ -387,10 +496,10 @@ const SchoolDashboard = () => {
                           Location
                         </h4>
                         <p className="text-gray-700 text-sm font-medium leading-relaxed ml-11">
-                          {profile?.address || 'Address not provided'}
+                          {mockProfile.address || 'Address not provided'}
                         </p>
                         <p className="text-gray-600 text-sm ml-11">
-                          {profile?.city}, {profile?.state} - {profile?.pincode}
+                          {mockProfile.city}, {mockProfile.state} - {mockProfile.pincode}
                         </p>
                       </div>
 
@@ -405,11 +514,11 @@ const SchoolDashboard = () => {
                         <div className="space-y-1 ml-11">
                           <p className="text-gray-700 text-sm font-medium flex items-center">
                             <Phone className="w-3 h-3 mr-2 text-gray-400" />
-                            {profile?.phone || 'Not provided'}
+                            {mockProfile.phone || 'Not provided'}
                           </p>
                           <p className="text-gray-700 text-sm font-medium flex items-center">
                             <Mail className="w-3 h-3 mr-2 text-gray-400" />
-                            {profile?.email || 'Not provided'}
+                            {mockProfile.email || 'Not provided'}
                           </p>
                         </div>
                       </div>
@@ -424,7 +533,7 @@ const SchoolDashboard = () => {
                         </h4>
                         <div className="space-y-1 ml-11">
                           <p className="text-gray-700 text-sm font-medium">
-                            <span className="text-gray-500">Principal:</span> {profile?.principalName || 'Not provided'}
+                            <span className="text-gray-500">Principal:</span> {mockProfile.principalName || 'Not provided'}
                           </p>
                         </div>
                       </div>
@@ -468,7 +577,7 @@ const SchoolDashboard = () => {
                       <div>
                         <p className="text-sm text-gray-500 font-medium">Students</p>
                         <p className="text-3xl font-bold text-blue-600 group-hover:scale-105 transition-transform">
-                          {stats?.totalStudents || 0}
+                          {mockStats.totalStudents || 0}
                         </p>
                       </div>
                       <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
@@ -486,7 +595,7 @@ const SchoolDashboard = () => {
                       <div>
                         <p className="text-sm text-gray-500 font-medium">Teachers</p>
                         <p className="text-3xl font-bold text-green-600 group-hover:scale-105 transition-transform">
-                          {stats?.totalTeachers || 0}
+                          {mockStats.totalTeachers || 0}
                         </p>
                       </div>
                       <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
@@ -508,7 +617,7 @@ const SchoolDashboard = () => {
                       <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-3">
                         <UsersIcon className="w-8 h-8 text-blue-600" />
                       </div>
-                      <p className="text-2xl font-bold text-gray-800">{stats?.totalUsers || 0}</p>
+                      <p className="text-2xl font-bold text-gray-800">{mockStats.totalUsers || 0}</p>
                       <p className="text-sm text-gray-500">Total Users</p>
                     </div>
                     
@@ -516,7 +625,7 @@ const SchoolDashboard = () => {
                       <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mx-auto mb-3">
                         <ActivityIcon className="w-8 h-8 text-green-600" />
                       </div>
-                      <p className="text-2xl font-bold text-gray-800">{stats?.activeUsers || 0}</p>
+                      <p className="text-2xl font-bold text-gray-800">{mockStats.activeUsers || 0}</p>
                       <p className="text-sm text-gray-500">Active Users</p>
                     </div>
                     
@@ -524,7 +633,7 @@ const SchoolDashboard = () => {
                       <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-3">
                         <TrendingUpIcon className="w-8 h-8 text-purple-600" />
                       </div>
-                      <p className="text-2xl font-bold text-gray-800">{stats?.engagementRate || '0%'}</p>
+                      <p className="text-2xl font-bold text-gray-800">{mockStats.engagementRate || '0%'}</p>
                       <p className="text-sm text-gray-500">Engagement Rate</p>
                     </div>
                   </div>
@@ -536,13 +645,13 @@ const SchoolDashboard = () => {
                     <Flag className="w-5 h-5 mr-3 text-red-600" />
                     Flagged Posts
                     <Badge className="ml-auto bg-red-100 text-red-800">
-                      {dashboardFlaggedPosts?.length || 0}
+                      {mockFlaggedPosts.length || 0}
                     </Badge>
                   </h3>
                   
-                  {dashboardFlaggedPosts?.length > 0 ? (
+                  {mockFlaggedPosts.length > 0 ? (
                     <div className="space-y-4 max-h-64 overflow-y-auto">
-                      {dashboardFlaggedPosts.map((post: any) => (
+                      {mockFlaggedPosts.map((post: any) => (
                         <div key={post._id} className="border border-red-200 rounded-xl p-4 bg-red-50">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -585,9 +694,9 @@ const SchoolDashboard = () => {
                     Recent Student Posts
                   </h3>
                   
-                  {dashboardRecentPosts?.length > 0 ? (
+                  {mockRecentPosts.length > 0 ? (
                     <div className="space-y-4 max-h-64 overflow-y-auto">
-                      {dashboardRecentPosts.map((post: any) => (
+                      {mockRecentPosts.map((post: any) => (
                         <div key={post._id} className="border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -646,9 +755,9 @@ const SchoolDashboard = () => {
                     School Activity
                   </h3>
                   
-                  {dashboardSchoolPosts?.length > 0 ? (
+                  {mockSchoolPosts.length > 0 ? (
                     <div className="space-y-4 max-h-80 overflow-y-auto">
-                      {dashboardSchoolPosts.map((post: any) => (
+                      {mockSchoolPosts.map((post: any) => (
                         <div key={post._id} className="border border-gray-200 rounded-xl p-4">
                           <div className="flex items-center justify-between mb-2">
                             <Badge className={`

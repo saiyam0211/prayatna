@@ -34,9 +34,9 @@ const ExplorePage = () => {
   const [isRewriting, setIsRewriting] = useState(false);
 
   const currentUser = {
-    name: 'Sam Wilson',
+    name: 'Riya',
     grade: '11th Grade',
-    school: 'Lincoln High School',
+    school: 'PW Gurukulam',
     avatar: '😊',
     followers: 234,
     following: 189,
@@ -374,7 +374,7 @@ const ExplorePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-9xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Left Sidebar - Profile Card */}
