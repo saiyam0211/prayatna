@@ -78,12 +78,28 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
     setIsProfileOpen(false);
   };
 
-  const currentUser = {
-    name: 'Satyabrata Mohanty',
-    email: 'satya@student.prayatna.edu',
+  // Get current user from localStorage if available
+  let currentUser = {
+    name: 'Satyabrat',
+    email: 'test@',
     avatar: '🎓',
     role: 'Student'
   };
+
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('prayatna_currentUser');
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        if (user && user.name) {
+          currentUser.name = user.name;
+          // Generate email from name (remove spaces, lowercase)
+          const emailName = user.name.replace(/\s+/g, '').toLowerCase();
+          currentUser.email = emailName + '@gmail.com';
+        }
+      } catch {}
+    }
+  }
 
   return (
     <nav className={`bg-white/90 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50 transition-all duration-300 ${className}`}>
@@ -258,4 +274,4 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
   );
 };
 
-export default Navbar; 
+export default Navbar;
