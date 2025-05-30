@@ -15,6 +15,7 @@ import ConnectionsPage from './pages/network/ConnectionsPage'
 import PeopleIFollowPage from './pages/network/PeopleIFollowPage'
 import EventsPage from './pages/network/EventsPage'
 import PagesIFollow from './pages/network/PagesIFollow'
+import QuizGame from './pages/gamification/quizGame';
 
 // Student Role Components
 import StudentAuthPage from './pages/roles/student/auth/index'
@@ -94,6 +95,9 @@ function App() {
           <Route path="events" element={<EventsPage />} />
           <Route path="pages" element={<PagesIFollow />} />
         </Route>
+
+        {/* Gameplay Route */}
+        <Route path="/gameplay" element={<MainLayout><QuizGame /></MainLayout>} />
       </Routes>
     </Router>
   )

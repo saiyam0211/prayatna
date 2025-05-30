@@ -46,11 +46,18 @@ const ExplorePage = () => {
   const [isPosting, setIsPosting] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
 
+<<<<<<< HEAD
   // Add state for currentUser
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     name: 'Sam Wilson',
     grade: '11th Grade',
     school: 'PW Gururkul School',
+=======
+  const currentUser = {
+    name: 'Riya',
+    grade: '11th Grade',
+    school: 'PW Gurukulam',
+>>>>>>> refs/remotes/origin/main
     avatar: '😊',
     followers: 234,
     following: 189,
@@ -402,7 +409,7 @@ const ExplorePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-9xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Left Sidebar - Profile Card */}

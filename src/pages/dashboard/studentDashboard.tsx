@@ -77,10 +77,17 @@ const Atom = ({ className }: { className: string }) => (
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
 
+<<<<<<< HEAD
   // Student Profile Data (load from localStorage if available)
   let profile = {
     name: "Satyabrata Mohanty",
     school: "PW Gururkul School",
+=======
+  // Student Profile Data
+  const profile = {
+    name: "Riya",
+    school: "PW Gurukulam",
+>>>>>>> refs/remotes/origin/main
     class: "Grade 12",
     hobbies: ["Reading", "Coding", "Basketball"],
     goals: ["Learn AI/ML", "Build Portfolio", "Join Tech Club"],

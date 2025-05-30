@@ -45,6 +45,11 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
       path: '/explore',
     },
     {
+      label: 'Gameplay',
+      icon: <Zap size={20} />,
+      path: '/gameplay', // Make sure this matches your gameplay route
+    },
+    {
       label: 'Network',
       icon: <Users size={20} />,
       path: '/network',
@@ -78,10 +83,16 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
     setIsProfileOpen(false);
   };
 
+<<<<<<< HEAD
   // Get current user from localStorage if available
   let currentUser = {
     name: 'Satyabrat',
     email: 'test@',
+=======
+  const currentUser = {
+    name: 'Riya',
+    email: 'satya@student.prayatna.edu',
+>>>>>>> refs/remotes/origin/main
     avatar: '🎓',
     role: 'Student'
   };
