@@ -77,16 +77,35 @@ const Atom = ({ className }: { className: string }) => (
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
 
+<<<<<<< HEAD
+  // Student Profile Data (load from localStorage if available)
+  let profile = {
+    name: "Satyabrata Mohanty",
+    school: "PW Gururkul School",
+=======
   // Student Profile Data
   const profile = {
     name: "Riya",
     school: "PW Gurukulam",
+>>>>>>> refs/remotes/origin/main
     class: "Grade 12",
     hobbies: ["Reading", "Coding", "Basketball"],
     goals: ["Learn AI/ML", "Build Portfolio", "Join Tech Club"],
     avatar:
       "https://img.freepik.com/premium-vector/man-avatar-profile-picture-isolated-background-avatar-profile-picture-man_1293239-4866.jpg",
   };
+
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("prayatna_currentUser");
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        if (user && user.name) {
+          profile.name = user.name;
+        }
+      } catch {}
+    }
+  }
 
   const studentProfile = {
     avatar: "🎯",

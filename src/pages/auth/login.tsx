@@ -7,13 +7,11 @@ import { Inputbox } from "@/components/ui/inputbox";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { ArrowRight, ArrowLeft, User } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { loginApi } from "@/api/useLogin";
 
-type Step = "email" | "password" | "2fa";
+type Step = "email" | "password";
 
 export default function LoginPage() {
-  const { login, loginWithGoogle } = useAuth();
-  
   const [currentStep, setCurrentStep] = useState<Step>("email");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,7 +20,6 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    twoFactorCode: "",
   });
   
   const handleNext = async () => {
@@ -49,38 +46,29 @@ export default function LoginPage() {
       try {
         setShowSuccess(true);
         
-        // Convert admission number to email format if needed
-        const email = formData.email.includes('@') 
-          ? formData.email 
-          : `${formData.email}@pwgurukulam.edu`;
-          
-        await login(email, formData.password);
-        
-        // Wait for the animation to complete before redirecting
-        setTimeout(() => {
-          // Redirect with success message
-          window.location.href = "/auth?login=success";
-        }, 1500);
+        // Prepare payload for loginApi
+        const isEmail = formData.email.includes("@");
+        const payload = {
+          admissionNumber: isEmail ? "" : formData.email,
+          email: isEmail ? formData.email : "",
+          password: formData.password,
+        };
+        console.log("Submitting login data:", payload);
+        const response = await loginApi(payload);
+        if (response.message === "login success") {
+          const userData = response.user || response.data?.user || response.data || {};
+          localStorage.setItem("prayatna_currentUser", JSON.stringify(userData));
+          setTimeout(() => {
+            window.location.href = "/explore";
+          }, 1500);
+        } else {
+          throw new Error(response.message || "Login failed");
+        }
       } catch (err) {
         setIsSubmitting(false);
         setShowSuccess(false);
         setError("Invalid admission number or password. Please try again.");
       }
-    }
-    else if (currentStep === "2fa") {
-      if (!formData.twoFactorCode || formData.twoFactorCode.length !== 6) {
-        setError("Please enter a valid 6-digit verification code");
-        return;
-      }
-      
-      // Simulate 2FA verification
-      setIsSubmitting(true);
-      setTimeout(() => {
-        setShowSuccess(true);
-        setTimeout(() => {
-          window.location.href = "/auth?login=success";
-        }, 1500);
-      }, 1000);
     }
     
     setError(null);
@@ -89,23 +77,11 @@ export default function LoginPage() {
   const handleBack = () => {
     if (currentStep === "password") {
       setCurrentStep("email");
-    } else if (currentStep === "2fa") {
-      setCurrentStep("password");
     }
     setError(null);
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsSubmitting(true);
-    
-    try {
-      await loginWithGoogle();
-      alert("Google sign-in successful! Welcome to PW Gurukulam.");
-    } catch (err) {
-      setError("Google sign-in failed. Please try again.");
-      setIsSubmitting(false);
-    }
-  };
+
   
   const validateEmail = (email: string) => {
     // Allow admission numbers (alphanumeric) or email addresses
@@ -165,13 +141,11 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold text-[#2D2D2D]">
             {currentStep === "email" && "Welcome Back"}
             {currentStep === "password" && "Enter Your Password"}
-            {currentStep === "2fa" && "Two-Factor Authentication"}
           </h1>
         </div>
         <p className="text-sm text-[#6B7280]">
           {currentStep === "email" && "Sign in to your PW Gurukulam account"}
           {currentStep === "password" && "Enter your secure password"}
-          {currentStep === "2fa" && "Enter the 6-digit code from your authenticator app"}
         </p>
       </div>
       
@@ -240,42 +214,6 @@ export default function LoginPage() {
               </div>
             </motion.div>
           )}
-
-          {currentStep === "2fa" && (
-            <motion.div
-              key="2fa"
-              custom={1}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute top-0 left-0 w-full"
-            >
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Inputbox
-                    id="twoFactorCode"
-                    type="text"
-                    label="6-digit verification code"
-                    value={formData.twoFactorCode}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      if (value.length <= 6) {
-                        setFormData({ ...formData, twoFactorCode: value });
-                      }
-                    }}
-                    className="w-full text-center text-lg tracking-widest"
-                    maxLength={6}
-                    autoFocus
-                  />
-                  <p className="text-sm text-[#6B7280] text-center">
-                    Enter the 6-digit code from your authenticator app
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
         </AnimatePresence>
       </div>
 
@@ -328,8 +266,7 @@ export default function LoginPage() {
             </span>
           ) : (
             <>
-              {currentStep === "2fa" ? "Complete Sign In" : 
-               currentStep === "password" ? "Sign In" : "Next"} 
+              {currentStep === "password" ? "Sign In" : "Next"} 
               <ArrowRight className="h-4 w-4 ml-1" />
             </>
           )}

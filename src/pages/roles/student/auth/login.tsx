@@ -7,7 +7,6 @@ import { Inputbox } from "@/components/ui/inputbox";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { ArrowRight, ArrowLeft, User, Phone, Lock } from "lucide-react";
-import { authAPI } from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
 
 type Step = "credentials" | "password";
@@ -20,20 +19,20 @@ export default function LoginPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
-    phoneNumber: "",
+    admissionNumber: "",
+    email: "",
     password: "",
   });
   
   const handleNext = async () => {
     if (isSubmitting) return;
-    
     if (currentStep === "credentials") {
-      if (!formData.phoneNumber.trim()) {
-        setError("Please enter your phone number");
+      if (!formData.admissionNumber.trim()) {
+        setError("Please enter your admission number");
         return;
       }
-      if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ""))) {
-        setError("Please enter a valid 10-digit phone number");
+      if (!formData.email.trim()) {
+        setError("Please enter your email");
         return;
       }
       setCurrentStep("password");
@@ -48,23 +47,15 @@ export default function LoginPage() {
       
       try {
         setShowSuccess(true);
-        
-        const response = await authAPI.studentLogin({
-          phoneNumber: formData.phoneNumber,
-          password: formData.password,
-        });
-
-        if (response.success) {
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 1500);
-        } else {
-          throw new Error(response.message || 'Login failed');
-        }
+        console.log('Submitting login data:', formData);
+        // Removed API call and localStorage logic
+        setTimeout(() => {
+          window.location.href = '/explore'; // Use full page reload for redirect
+        }, 1500);
       } catch (err) {
         setIsSubmitting(false);
         setShowSuccess(false);
-        setError(err instanceof Error ? err.message : "Invalid phone number or password. Please try again.");
+        setError(err instanceof Error ? err.message : "Invalid credentials. Please try again.");
       }
     }
     
@@ -127,13 +118,11 @@ export default function LoginPage() {
             <User className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-2xl font-semibold text-[#2D2D2D]">
-            {currentStep === "credentials" && "Welcome Back"}
-            {currentStep === "password" && "Enter Your Password"}
+            Welcome Back
           </h1>
         </div>
         <p className="text-sm text-[#6B7280]">
-          {currentStep === "credentials" && "Sign in to your Prayatna account"}
-          {currentStep === "password" && "Enter your secure password"}
+          Sign in to your Prayatna account
         </p>
       </div>
       
@@ -153,36 +142,47 @@ export default function LoginPage() {
               <div className="space-y-6">
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100 mb-6">
                   <div className="flex items-center gap-2 mb-2">
-                    <Phone className="w-5 h-5 text-blue-600" />
+                    <User className="w-5 h-5 text-blue-600" />
                     <p className="text-sm text-gray-700 font-medium">
-                      Use your registered phone number
+                      Use your registered admission number and email
                     </p>
                   </div>
                   <p className="text-xs text-gray-600">
-                    Enter the phone number you used during registration.
+                    Enter the admission number and email you used during registration.
                   </p>
                 </div>
-                
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <Phone className="w-4 h-4 text-[#4BA3C7]" />
-                    <label className="text-[#2D2D2D] font-medium">Phone Number</label>
+                    <User className="w-4 h-4 text-[#4BA3C7]" />
+                    <label className="text-[#2D2D2D] font-medium">Admission Number</label>
                   </div>
                   <Inputbox
-                    id="phoneNumber"
-                    type="tel"
+                    id="admissionNumber"
+                    type="text"
                     label=""
-                    value={formData.phoneNumber}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                      setFormData({ ...formData, phoneNumber: e.target.value.replace(/\D/g, '') })}
+                    value={formData.admissionNumber}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({ ...formData, admissionNumber: e.target.value })}
                     className="w-full"
                     autoFocus
-                    placeholder="Enter your 10-digit phone number"
-                    maxLength={10}
+                    placeholder="Enter your admission number"
                   />
-                  <p className="text-sm text-[#6B7280]">
-                    Use the same phone number from your registration
-                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="w-4 h-4 text-[#4BA3C7]" />
+                    <label className="text-[#2D2D2D] font-medium">Email</label>
+                  </div>
+                  <Inputbox
+                    id="email"
+                    type="email"
+                    label=""
+                    value={formData.email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({ ...formData, email: e.target.value })}
+                    className="w-full"
+                    placeholder="Enter your email"
+                  />
                 </div>
               </div>
             </motion.div>

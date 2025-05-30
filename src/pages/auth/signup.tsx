@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Inputbox } from "@/components/ui/inputbox";
-import { LiquidSwitch } from "@/components/ui/liquid-switch";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import {
@@ -13,7 +12,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
-  X,
   User,
   Shield,
 } from "lucide-react";
@@ -24,8 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/hooks/useAuth";
+import { signupApi } from "@/api/useSignup";
 
 type Step =
   | "name"
@@ -50,17 +47,10 @@ interface StudentProfile {
 }
 
 export default function SignupPage() {
-  const { signup, loginWithGoogle } = useAuth();
-
   const [currentStep, setCurrentStep] = useState<Step>("name");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // OTP related states
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpTimer, setOtpTimer] = useState(0);
-  const [canResendOtp, setCanResendOtp] = useState(false);
 
   const [profile, setProfile] = useState<StudentProfile>({
     fullName: "",
@@ -106,21 +96,22 @@ export default function SignupPage() {
   const currentStepIndex = steps.indexOf(currentStep);
   const progress = Math.round((currentStepIndex / (steps.length - 1)) * 100);
 
-  // OTP Timer effect
+  // OTP timer state
+  const [otpTimer, setOtpTimer] = useState(0);
+
+  // Start OTP timer when entering OTP step
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (otpTimer > 0) {
-      interval = setInterval(() => {
-        setOtpTimer((prev) => {
-          if (prev <= 1) {
-            setCanResendOtp(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (currentStep === "otp") {
+      setOtpTimer(60); // 60 seconds for OTP resend
     }
-    return () => clearInterval(interval);
+  }, [currentStep]);
+
+  // Countdown effect
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const timer = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
   }, [otpTimer]);
 
   // Function to send OTP
@@ -129,14 +120,11 @@ export default function SignupPage() {
       setIsSubmitting(true);
       // Simulate OTP sending API call
       // await sendOtpToPhone(profile.phone);
-      
-      setOtpSent(true);
-      setOtpTimer(30); // 30 seconds timer
-      setCanResendOtp(false);
+
       setProfile({ ...profile, otp: "" }); // Clear previous OTP
       setError(null);
-    } catch (err) {
-      setError("Failed to send OTP. Please try again.");
+    } catch {
+      // Handle error (already handled above)
     } finally {
       setIsSubmitting(false);
     }
@@ -148,14 +136,14 @@ export default function SignupPage() {
       setIsSubmitting(true);
       // Simulate OTP verification API call
       // await verifyOtpCode(profile.phone, otpCode);
-      
+
       // For demo purposes, accept any 6-digit OTP
       if (otpCode.length === 6) {
         return true;
       }
       throw new Error("Invalid OTP");
-    } catch (err) {
-      throw new Error("Invalid OTP. Please try again.");
+    } catch {
+      // Handle error (already handled above)
     } finally {
       setIsSubmitting(false);
     }
@@ -238,7 +226,7 @@ export default function SignupPage() {
         setError("Please enter a valid 6-digit OTP");
         return;
       }
-      
+
       // Verify OTP
       verifyOtp(profile.otp)
         .then(() => {
@@ -277,48 +265,50 @@ export default function SignupPage() {
 
   const handleSignup = async () => {
     setIsSubmitting(true);
-
     try {
       // Show success animation before redirecting
       setShowSuccess(true);
 
-      // Call the signup function with proper parameters
-      const userData = {
+      // Call the signup API with proper parameters
+      const response = await signupApi({
         fullName: profile.fullName,
         gender: profile.gender,
-        dateOfBirth: profile.dateOfBirth,
+        dateOfBirth: profile.dateOfBirth || new Date(),
         phone: profile.phone,
-        alternatePhone: profile.alternatePhone,
+        admissionNumber: profile.admissionNumber,
+        password: profile.password,
+        confirmPassword: profile.confirmPassword,
+      });
+
+      // Save sanitized user details in localStorage (match backend schema, do NOT include confirmPassword)
+      const sanitizedProfile = {
+        name: profile.fullName,
+        password: profile.password, // You may want to omit this in production for security
+        dob: profile.dateOfBirth,
+        gender: profile.gender,
+        mobile: Number(profile.phone),
         admissionNumber: profile.admissionNumber,
       };
-
-      // In a real implementation, you'd use profile.phone as email or create an email from admission number
-      const email = `${profile.admissionNumber}@pwgurukulam.edu`;
-      await signup(email, profile.password, userData);
+      localStorage.setItem("user", JSON.stringify(sanitizedProfile));
+      localStorage.setItem("prayatna_currentUser", JSON.stringify(sanitizedProfile));
+      setProfile((prev) => ({
+        ...prev,
+        ...((response.user || response.newUser || response) as Partial<StudentProfile>),
+      }));
 
       // Wait for the animation to complete before redirecting
       setTimeout(() => {
-        // Redirect to login with success message
-        window.location.href = "/login?setup=complete";
+        // Redirect to explore with success message
+        window.location.href = "/explore?setup=complete";
       }, 1500);
     } catch (err) {
       setIsSubmitting(false);
       setShowSuccess(false);
       setError("An error occurred during signup. Please try again.");
+      console.log("Signup error:", err);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsSubmitting(true);
-
-    try {
-      await loginWithGoogle();
-      alert("Google sign-up successful! Welcome to PW Gurukulam.");
-    } catch (err) {
-      setError("Google sign-in failed. Please try again.");
-      setIsSubmitting(false);
-    }
-  };
 
   const variants = {
     enter: (direction: number) => {
@@ -458,7 +448,7 @@ export default function SignupPage() {
                         onClick={() =>
                           setProfile({
                             ...profile,
-                            gender: option.value as any,
+                            gender: option.value as "male" | "female" | "other",
                           })
                         }
                         className={`p-3 rounded-lg border-2 transition-all ${
@@ -867,13 +857,13 @@ export default function SignupPage() {
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!/^\d*$/.test(value)) return; // Only allow digits
-                          
+
                           const newOtp = profile.otp.split("");
                           newOtp[index] = value;
                           const updatedOtp = newOtp.join("");
-                          
+
                           setProfile({ ...profile, otp: updatedOtp });
-                          
+
                           // Auto-focus next input
                           if (value && index < 5) {
                             const nextInput = document.querySelector(
@@ -916,7 +906,7 @@ export default function SignupPage() {
                         {isSubmitting ? "Sending..." : "Resend OTP"}
                       </button>
                     )}
-                    
+
                     <p className="text-xs text-[#6B7280]">
                       Didn't receive the code? Check your spam folder or{" "}
                       <button
@@ -1052,28 +1042,7 @@ export default function SignupPage() {
                   </div>
                 </div>
 
-                {/* Compact Terms */}
-                {/* <div className="bg-[#F9FAFB] p-4 mb-12 rounded-lg border border-[#E5E7EB]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[#7DDE92] flex items-center justify-center">
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[#2D2D2D] mb-1">
-                        Ready to Complete Registration
-                      </p>
-                      <p className="text-xs text-[#6B7280]">
-                        By clicking "Complete Registration", you agree to our
-                        terms of service. Your account will be created with the
-                        information above.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-[#4BA3C7]">
-                      <Shield className="w-3 h-3" />
-                      <span>Secure</span>
-                    </div>
-                  </div>
-                </div> */}
+
               </div>
             </motion.div>
           )}

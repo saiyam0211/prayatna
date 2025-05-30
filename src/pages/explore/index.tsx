@@ -25,6 +25,19 @@ interface Post {
   type: PostType;
 }
 
+// Define a more complete UserProfile type for localStorage
+interface UserProfile {
+  name: string;
+  grade?: string;
+  school?: string;
+  avatar?: string;
+  followers?: number;
+  following?: number;
+  posts?: number;
+  achievements?: string[];
+  isVerified?: boolean;
+}
+
 const ExplorePage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
@@ -33,17 +46,39 @@ const ExplorePage = () => {
   const [isPosting, setIsPosting] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
 
+<<<<<<< HEAD
+  // Add state for currentUser
+  const [currentUser, setCurrentUser] = useState<UserProfile>({
+    name: 'Sam Wilson',
+    grade: '11th Grade',
+    school: 'PW Gururkul School',
+=======
   const currentUser = {
     name: 'Riya',
     grade: '11th Grade',
     school: 'PW Gurukulam',
+>>>>>>> refs/remotes/origin/main
     avatar: '😊',
     followers: 234,
     following: 189,
     posts: 47,
     achievements: ['Honor Roll', 'Debate Champion', 'Coding Club Leader'],
     isVerified: false
-  };
+  });
+
+  // Load currentUser from localStorage on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem('prayatna_currentUser');
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        console.log('Loaded user from localStorage:', parsedUser); // <-- print loaded data
+        setCurrentUser((prev) => ({ ...prev, ...parsedUser }));
+      } catch (error) {
+        console.error('Error loading user from localStorage:', error);
+      }
+    }
+  }, []);
 
   // Initial sample posts
   const initialPosts: Post[] = [
@@ -52,7 +87,7 @@ const ExplorePage = () => {
       user: {
         name: 'Alex Chen',
         grade: '12th Grade',
-        school: 'Lincoln High School',
+        school: 'PW Gururkul School',
         avatar: '🎯',
         isVerified: true
       },
@@ -398,7 +433,7 @@ const ExplorePage = () => {
                     <div className="relative group">
                       <div className="w-20 h-20 rounded-full bg-white p-1 shadow-xl">
                         <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-3xl transform transition-transform group-hover:scale-105">
-                          {currentUser.avatar}
+                          {currentUser?.avatar || '😊'}
                         </div>
                       </div>
                       <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
@@ -407,12 +442,12 @@ const ExplorePage = () => {
                     </div>
                     
                     <h3 className="mt-4 font-bold text-xl bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                      {currentUser.name}
+                      {currentUser?.name}
                     </h3>
-                    <p className="text-sm text-gray-600 font-medium">{currentUser.grade}</p>
+                    <p className="text-sm text-gray-600 font-medium">{currentUser?.grade}</p>
                     <p className="text-xs text-gray-500 flex items-center mt-1 font-medium">
                       <MapPin className="w-3 h-3 mr-1" />
-                      {currentUser.school}
+                      {currentUser?.school}
                     </p>
                     
                     <button className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-sm font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-200">
@@ -424,19 +459,19 @@ const ExplorePage = () => {
                   <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
                     <div className="text-center group cursor-pointer">
                       <div className="font-bold text-xl bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent group-hover:scale-110 transition-transform">
-                        {currentUser.posts}
+                        {currentUser?.posts}
                       </div>
                       <div className="text-xs text-gray-500 font-medium">Posts</div>
                     </div>
                     <div className="text-center group cursor-pointer">
                       <div className="font-bold text-xl bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent group-hover:scale-110 transition-transform">
-                        {currentUser.followers}
+                        {currentUser?.followers}
                       </div>
                       <div className="text-xs text-gray-500 font-medium">Followers</div>
                     </div>
                     <div className="text-center group cursor-pointer">
                       <div className="font-bold text-xl bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent group-hover:scale-110 transition-transform">
-                        {currentUser.following}
+                        {currentUser?.following}
                       </div>
                       <div className="text-xs text-gray-500 font-medium">Following</div>
                     </div>
@@ -449,7 +484,7 @@ const ExplorePage = () => {
                       Achievements
                     </h4>
                     <div className="space-y-2">
-                      {currentUser.achievements.map((achievement, index) => (
+                      {currentUser?.achievements?.map((achievement, index) => (
                         <div key={index} className="flex items-center space-x-2 p-2 rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-colors cursor-pointer">
                           <div className="w-6 h-6 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 flex items-center justify-center">
                             <span className="text-white text-xs">🏆</span>
@@ -474,7 +509,7 @@ const ExplorePage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 transition-colors">
                     <span className="text-sm text-gray-700 font-medium">Posts Created</span>
-                    <span className="font-bold text-lg text-green-600">{posts.filter(post => post.user.name === currentUser.name).length}</span>
+                    <span className="font-bold text-lg text-green-600">{posts.filter(post => post.user.name === currentUser?.name).length}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 transition-colors">
                     <span className="text-sm text-gray-700 font-medium">Total Posts</span>
@@ -528,7 +563,7 @@ const ExplorePage = () => {
                 <div className="flex items-start space-x-4">
                   <div className="relative">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-2xl transform hover:scale-105 transition-transform">
-                      {currentUser.avatar}
+                      {currentUser?.avatar || '😊'}
                     </div>
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
                   </div>
@@ -622,7 +657,6 @@ const ExplorePage = () => {
                           </span>
                         </button>
                       </div>
-                      
                       <div className="flex items-center space-x-3">
                         <button 
                           onClick={handleCreatePost}
@@ -764,7 +798,7 @@ const ExplorePage = () => {
                           <span>Share</span>
                         </button>
                       </div>
-                      
+                      {/* FIXED: closed the div properly above, so the next button is valid JSX */}
                       <button 
                         onClick={() => handleBookmark(post.id)}
                         className={`p-3 rounded-xl transition-all duration-200 transform hover:scale-105 ${
@@ -785,7 +819,7 @@ const ExplorePage = () => {
                         {/* Enhanced Comment Input */}
                         <div className="flex items-start space-x-4">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-xl">
-                            {currentUser.avatar}
+                            {currentUser?.avatar}
                           </div>
                           <div className="flex-1 relative">
                             <input

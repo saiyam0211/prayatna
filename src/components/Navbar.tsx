@@ -14,6 +14,7 @@ import {
   BookOpen,
   Zap
 } from 'lucide-react';
+import { logoutApi } from '@/api/useLogout';
 
 interface NavItem {
   label: string;
@@ -72,10 +73,9 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
     setIsMenuOpen(false);
   };
 
-  const handleProfileAction = (path: string, label: string) => {
+  const handleProfileAction = async (path: string, label: string) => {
     if (label === 'Logout') {
-      // Handle logout logic here
-      localStorage.removeItem('token');
+      await logoutApi();
       navigate('/auth');
     } else {
       navigate(path);
@@ -83,12 +83,34 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
     setIsProfileOpen(false);
   };
 
+<<<<<<< HEAD
+  // Get current user from localStorage if available
+  let currentUser = {
+    name: 'Satyabrat',
+    email: 'test@',
+=======
   const currentUser = {
     name: 'Riya',
     email: 'satya@student.prayatna.edu',
+>>>>>>> refs/remotes/origin/main
     avatar: '🎓',
     role: 'Student'
   };
+
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('prayatna_currentUser');
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        if (user && user.name) {
+          currentUser.name = user.name;
+          // Generate email from name (remove spaces, lowercase)
+          const emailName = user.name.replace(/\s+/g, '').toLowerCase();
+          currentUser.email = emailName + '@gmail.com';
+        }
+      } catch {}
+    }
+  }
 
   return (
     <nav className={`bg-white/90 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50 transition-all duration-300 ${className}`}>
