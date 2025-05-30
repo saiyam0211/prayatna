@@ -28,6 +28,7 @@ const login_user = wrapAsync(async(req, res) => {
     const { token, user } = await loginUser(identifier, password);
     req.user = user;
     res.cookie("accessToken", token, cookieOptions);
+    // Ensure the response includes the user object and a clear message
     res.status(200).json({ user, message: "login success" });
 });
 

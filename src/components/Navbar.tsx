@@ -14,6 +14,7 @@ import {
   BookOpen,
   Zap
 } from 'lucide-react';
+import { logoutApi } from '@/api/useLogout';
 
 interface NavItem {
   label: string;
@@ -67,10 +68,9 @@ const Navbar: React.FC<NavbarProps> = ({ className = "" }) => {
     setIsMenuOpen(false);
   };
 
-  const handleProfileAction = (path: string, label: string) => {
+  const handleProfileAction = async (path: string, label: string) => {
     if (label === 'Logout') {
-      // Handle logout logic here
-      localStorage.removeItem('token');
+      await logoutApi();
       navigate('/auth');
     } else {
       navigate(path);
